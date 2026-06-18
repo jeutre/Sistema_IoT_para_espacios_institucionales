@@ -39,24 +39,24 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    # Sprint 1
     'apps.autenticacion',
     'apps.laboratorio',
+    'apps.dispositivos',
+    'apps.ocupacion',
+    'apps.equipos',
+    ]
+    
 
-    # Sprint 2 — descomentar cuando llegue
-    # 'apps.dispositivos',
-    # 'apps.ocupacion',
-    # 'apps.equipos',
+# Sprint 2 — descomentar cuando llegue
+# 'apps.control',
 
-    # Sprint 3 — descomentar cuando llegue
-    # 'apps.dashboard',
-    # 'apps.alertas',
-    # 'apps.reportes',
+# Sprint 3 — descomentar cuando llegue
+#'apps.dashboard',
+#'apps.alertas',
+#'apps.reportes',
 
-    # Sprint 4 — descomentar cuando llegue
-    # 'apps.control',
-    # 'apps.automatizacion',
-]
+# Sprint 4 — descomentar cuando llegue
+#'apps.automatizacion',
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
