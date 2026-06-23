@@ -1,3 +1,5 @@
+from django.db.models import Count
+from django.db.models.functions import ExtractHour
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -14,10 +16,23 @@ class OcupacionViewSet(viewsets.ModelViewSet):
     http_method_names  = ['get', 'head', 'options']
 
     def get_queryset(self):
+        """
+        Listado general de eventos de ocupación, con filtros. (HU-11)
+        ?dispositivo=<id>
+        ?desde=2026-06-01&hasta=2026-06-20
+        """
         queryset    = EventoOcupacion.objects.all()
         dispositivo = self.request.query_params.get('dispositivo')
+        desde       = self.request.query_params.get('desde')
+        hasta       = self.request.query_params.get('hasta')
+
         if dispositivo:
             queryset = queryset.filter(dispositivo__id=dispositivo)
+        if desde:
+            queryset = queryset.filter(registrado_en__date__gte=desde)
+        if hasta:
+            queryset = queryset.filter(registrado_en__date__lte=hasta)
+
         return queryset
 
     @action(detail=False, methods=['get'], url_path='tiempo-real')
@@ -73,3 +88,46 @@ class OcupacionViewSet(viewsets.ModelViewSet):
             EventoOcupacionSerializer(evento).data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=False, methods=['get'], url_path='horas-pico')
+    def horas_pico(self, request):
+        """
+        Estadística de horas pico de ocupación. (HU-12)
+        Cuenta cuántas veces el laboratorio quedó "ocupado" en cada
+        hora del día (0-23), opcionalmente filtrado por dispositivo
+        o laboratorio y por rango de fechas.
+
+        GET /api/v1/ocupacion/horas-pico/
+        GET /api/v1/ocupacion/horas-pico/?dispositivo=1
+        GET /api/v1/ocupacion/horas-pico/?desde=2026-06-01&hasta=2026-06-20
+        """
+        queryset = EventoOcupacion.objects.filter(estado='ocupado')
+
+        dispositivo = request.query_params.get('dispositivo')
+        desde       = request.query_params.get('desde')
+        hasta       = request.query_params.get('hasta')
+
+        if dispositivo:
+            queryset = queryset.filter(dispositivo__id=dispositivo)
+        if desde:
+            queryset = queryset.filter(registrado_en__date__gte=desde)
+        if hasta:
+            queryset = queryset.filter(registrado_en__date__lte=hasta)
+
+        conteo_por_hora = (
+            queryset
+            .annotate(hora=ExtractHour('registrado_en'))
+            .values('hora')
+            .annotate(total=Count('id'))
+            .order_by('-total')
+        )
+
+        resultado = [
+            {'hora': item['hora'], 'total_eventos_ocupado': item['total']}
+            for item in conteo_por_hora
+        ]
+
+        return Response({
+            'hora_pico': resultado[0] if resultado else None,
+            'detalle_por_hora': resultado,
+        })
