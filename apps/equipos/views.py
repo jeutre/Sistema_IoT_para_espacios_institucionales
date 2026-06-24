@@ -3,30 +3,34 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-import subprocess
+import asyncio
+import platform
+from asgiref.sync import sync_to_async
 
 from .models import Equipo, EventoConexion
 from .serializers import EquipoSerializer, EventoConexionSerializer
 
 
-def verificar_ping(ip):
+async def verificar_ping_async(ip):
     """
-    Ejecuta un ping real al equipo y devuelve True/False.
-    Funciona en Windows (-n) y Linux/Mac (-c).
+    Ejecuta un ping real al equipo y devuelve True/False de forma asíncrona.
     """
-    import platform
     parametro_cantidad = '-n' if platform.system().lower() == 'windows' else '-c'
+    parametro_timeout = '-w' if platform.system().lower() == 'windows' else '-W'
+    timeout_val = '1000' if platform.system().lower() == 'windows' else '1'
     try:
-        resultado = subprocess.run(
-            ['ping', parametro_cantidad, '1', '-w', '1000', ip] if platform.system().lower() == 'windows'
-            else ['ping', parametro_cantidad, '1', '-W', '1', ip],
-            capture_output=True
+        process = await asyncio.create_subprocess_exec(
+            'ping', parametro_cantidad, '1', parametro_timeout, timeout_val, ip,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
         )
-        return resultado.returncode == 0
+        await process.communicate()
+        return process.returncode == 0
     except Exception:
         return False
 
 
+@sync_to_async
 def actualizar_estado_equipo(equipo, responde):
     """
     Actualiza el estado de un equipo y, SOLO SI CAMBIÓ,
@@ -70,14 +74,13 @@ class EquipoViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(detail=True, methods=['get'], url_path='ping')
-    def ping(self, request, pk=None):
+    async def ping(self, request, pk=None):
         """
         Verifica conectividad de UN equipo. (HU-14)
-        GET /api/v1/equipos/<id>/ping/
         """
-        equipo   = self.get_object()
-        responde = verificar_ping(equipo.ip)
-        cambio   = actualizar_estado_equipo(equipo, responde)
+        equipo   = await sync_to_async(self.get_object)()
+        responde = await verificar_ping_async(equipo.ip)
+        cambio   = await actualizar_estado_equipo(equipo, responde)
 
         return Response({
             'equipo':           equipo.nombre,
@@ -89,24 +92,24 @@ class EquipoViewSet(viewsets.ModelViewSet):
         })
 
     @action(detail=False, methods=['get'], url_path='ping-todos')
-    def ping_todos(self, request):
+    async def ping_todos(self, request):
         """
-        Verifica conectividad de TODOS los equipos. (HU-14)
-        GET /api/v1/equipos/ping-todos/
+        Verifica conectividad de TODOS los equipos concurrentemente. (HU-14)
         """
-        equipos    = Equipo.objects.filter(activo=True)
-        resultados = []
-
-        for equipo in equipos:
-            responde = verificar_ping(equipo.ip)
-            cambio   = actualizar_estado_equipo(equipo, responde)
-
-            resultados.append({
+        equipos = await sync_to_async(list)(Equipo.objects.filter(activo=True))
+        
+        async def procesar_equipo(equipo):
+            responde = await verificar_ping_async(equipo.ip)
+            cambio   = await actualizar_estado_equipo(equipo, responde)
+            return {
                 'equipo':           equipo.nombre,
                 'ip':               equipo.ip,
                 'estado_conexion':  equipo.estado_conexion,
                 'cambio_de_estado': cambio,
-            })
+            }
+
+        tasks = [procesar_equipo(e) for e in equipos]
+        resultados = await asyncio.gather(*tasks)
 
         total_activos = sum(1 for r in resultados if r['estado_conexion'] == 'activo')
 
@@ -134,6 +137,11 @@ class EquipoViewSet(viewsets.ModelViewSet):
             eventos = eventos.filter(registrado_en__date__gte=desde)
         if hasta:
             eventos = eventos.filter(registrado_en__date__lte=hasta)
+
+        page = self.paginate_queryset(eventos)
+        if page is not None:
+            serializer = EventoConexionSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
         serializer = EventoConexionSerializer(eventos, many=True)
         return Response(serializer.data)

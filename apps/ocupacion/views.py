@@ -4,6 +4,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_api_key.permissions import HasAPIKey
 
 from .models import EventoOcupacion
 from .serializers import EventoOcupacionSerializer
@@ -38,26 +39,32 @@ class OcupacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='tiempo-real')
     def tiempo_real(self, request):
         """
-        Devuelve el estado actual de ocupación por dispositivo (HU-10)
+        Devuelve el estado actual de ocupación por dispositivo (HU-10) - Optimizado (N+1)
         """
-        dispositivos = Dispositivo.objects.all()
-        resultado    = []
+        from django.db.models import Subquery, OuterRef
+        
+        ultimos_eventos = EventoOcupacion.objects.filter(
+            dispositivo=OuterRef('pk')
+        ).order_by('-registrado_en')
+        
+        dispositivos = Dispositivo.objects.annotate(
+            ultimo_estado=Subquery(ultimos_eventos.values('estado')[:1]),
+            ultima_vez=Subquery(ultimos_eventos.values('registrado_en')[:1])
+        ).select_related('laboratorio')
 
-        for dispositivo in dispositivos:
-            ultimo = EventoOcupacion.objects.filter(
-                dispositivo=dispositivo
-            ).first()
-
-            resultado.append({
-                'dispositivo':  dispositivo.identificador,
-                'laboratorio':  dispositivo.laboratorio.nombre,
-                'estado':       ultimo.estado if ultimo else 'sin datos',
-                'ultima_vez':   ultimo.registrado_en if ultimo else None,
-            })
+        resultado = [
+            {
+                'dispositivo':  d.identificador,
+                'laboratorio':  d.laboratorio.nombre,
+                'estado':       d.ultimo_estado if d.ultimo_estado else 'sin datos',
+                'ultima_vez':   d.ultima_vez,
+            }
+            for d in dispositivos
+        ]
 
         return Response(resultado)
 
-    @action(detail=False, methods=['post'], url_path='pir', permission_classes=[AllowAny])
+    @action(detail=False, methods=['post'], url_path='pir', permission_classes=[HasAPIKey])
     def recibir_pir(self, request):
         """
         Endpoint que recibe datos del sensor PIR desde el ESP32 (HU-09)

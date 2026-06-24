@@ -3,7 +3,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework_api_key.permissions import HasAPIKey
 import subprocess
+import asyncio
+from asgiref.sync import sync_to_async
 
 from .models import Dispositivo, HistorialComunicacion
 from .serializers import DispositivoSerializer, HistorialComunicacionSerializer
@@ -17,23 +20,26 @@ class DispositivoViewSet(viewsets.ModelViewSet):
         return Dispositivo.objects.all()
 
     @action(detail=True, methods=['get'], url_path='ping')
-    def ping(self, request, pk=None):
+    async def ping(self, request, pk=None):
         """
-        Verifica si el ESP32 responde (HU-07)
+        Verifica si el ESP32 responde (HU-07) - Asíncrono
         """
-        dispositivo = self.get_object()
+        dispositivo = await sync_to_async(self.get_object)()
+        
         try:
-            resultado = subprocess.run(
-                ['ping', '-n', '1', '-w', '1000', dispositivo.ip],
-                capture_output=True
+            process = await asyncio.create_subprocess_exec(
+                'ping', '-n', '1', '-w', '1000', dispositivo.ip,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
             )
-            conectado = resultado.returncode == 0
+            stdout, stderr = await process.communicate()
+            conectado = process.returncode == 0
         except Exception:
             conectado = False
 
         dispositivo.estado          = 'conectado' if conectado else 'desconectado'
         dispositivo.ultima_conexion = timezone.now()
-        dispositivo.save()
+        await sync_to_async(dispositivo.save)()
 
         return Response({
             'dispositivo': dispositivo.identificador,
@@ -54,10 +60,10 @@ class HistorialComunicacionViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(dispositivo__id=dispositivo)
         return queryset
 
-    @action(detail=False, methods=['post'], url_path='recibir', permission_classes=[AllowAny])
+    @action(detail=False, methods=['post'], url_path='recibir', permission_classes=[HasAPIKey])
     def recibir(self, request):
         """
-        Endpoint que recibe mensajes del ESP32 (HU-08)
+        Endpoint que recibe mensajes del ESP32 (Protegido con API Key)
         """
         dispositivo_id = request.data.get('dispositivo_id')
         mensaje        = request.data.get('mensaje')

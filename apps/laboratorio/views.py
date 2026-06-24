@@ -9,7 +9,7 @@ from .serializers import LaboratorioSerializer
 
 class LaboratorioViewSet(viewsets.ModelViewSet):
     serializer_class   = LaboratorioSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
        
