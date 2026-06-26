@@ -1,0 +1,73 @@
+.portal-wrapper {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  margin: -2rem; /* Negate the .app-container padding temporarily, or adjust index.css */
+}
+
+/* Redefine app-container for the portal if needed */
+body:has(.portal-wrapper) .app-container {
+  padding: 0;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.portal-sidebar {
+  width: 280px;
+  height: 100vh;
+  border-radius: 0;
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1.5rem;
+}
+
+.sidebar-brand {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  flex-grow: 1;
+}
+
+.nav-item {
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.nav-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  border-left: 4px solid #3b82f6;
+}
+
+.logout-btn {
+  margin-top: auto;
+  width: 100%;
+}
+
+.portal-content {
+  flex-grow: 1;
+  padding: 2rem 3rem;
+  overflow-y: auto;
+  height: 100vh;
+}

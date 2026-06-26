@@ -1,0 +1,99 @@
+.ocupacion-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.ocupacion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.ocupacion-card {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bordes superiores de colores según estado */
+.ocupacion-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.ocupacion-card.ocupado::before {
+  background: #f87171; /* Rojo suave */
+}
+.ocupacion-card.vacio::before {
+  background: #34d399; /* Verde esmeralda */
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  font-size: 1.2rem;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.live-indicator {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  animation: pulse 2s infinite;
+}
+
+.ocupado .live-indicator {
+  color: #f87171;
+}
+
+.vacio .live-indicator {
+  color: #34d399;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.card-body {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.status-icon {
+  font-size: 3.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.status-text {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ocupado .status-text {
+  color: #fca5a5;
+}
+
+.vacio .status-text {
+  color: #6ee7b7;
+}
+
+.time-text {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

@@ -1,0 +1,224 @@
+/* Layout Pantalla Completa */
+.login-fullscreen-layout {
+  min-height: 100vh;
+  width: 100vw;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+
+/* Capa oscura semitransparente para dar contraste */
+.login-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(to right, rgba(0, 5, 15, 0.4) 0%, rgba(0, 5, 15, 0.8) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* Alinear el formulario a la derecha */
+  padding: 2rem 5rem;
+}
+
+/* Tarjeta Glassmorphism flotante */
+.login-glass-card {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(10, 20, 40, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 240, 255, 0.15);
+  z-index: 2;
+  position: relative;
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-logo {
+  max-width: 150px;
+  height: auto;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));
+}
+
+.login-brand h2 {
+  font-size: 1.5rem;
+  color: #fff;
+  letter-spacing: 1px;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.login-brand p {
+  color: #00f0ff;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Formulario Cibernético */
+.cyber-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.cyber-input {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cyber-input label {
+  color: #8be9fd;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  margin-bottom: 0.4rem;
+}
+
+.cyber-input input {
+  background: rgba(0, 10, 20, 0.7);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 6px;
+  color: #fff;
+  padding: 0.9rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s;
+}
+
+.cyber-input input:focus {
+  border-color: #00f0ff;
+  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.3);
+  outline: none;
+}
+
+.cyber-input input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.input-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0%;
+  background: #00f0ff;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 10px #00f0ff;
+}
+
+.cyber-input input:focus ~ .input-glow {
+  width: 100%;
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin-top: -0.5rem;
+}
+
+.cyber-link {
+  background: none;
+  border: none;
+  color: #00f0ff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.cyber-link:hover {
+  color: #fff;
+  text-shadow: 0 0 8px #00f0ff;
+}
+
+/* Botones */
+.cyber-btn {
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 700;
+  padding: 0.9rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.cyber-btn.btn-primary {
+  background: linear-gradient(90deg, rgba(0, 150, 255, 0.9), rgba(0, 240, 255, 0.9));
+  margin-top: 0.5rem;
+}
+
+.cyber-btn.btn-primary:hover {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 1), rgba(0, 150, 255, 1));
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.outline-btn {
+  background: transparent;
+  border: 1px solid #00f0ff;
+  color: #00f0ff;
+}
+
+.cyber-btn.outline-btn:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.cyber-btn:disabled {
+  background: rgba(100, 100, 100, 0.5);
+  box-shadow: none;
+  color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.scanning {
+  animation: scan 1.5s infinite linear;
+}
+
+@keyframes scan {
+  0% { opacity: 0.5; text-shadow: none; }
+  50% { opacity: 1; text-shadow: 0 0 10px #fff, 0 0 20px #00f0ff; }
+  100% { opacity: 0.5; text-shadow: none; }
+}
+
+.error-message {
+  background: rgba(255, 0, 60, 0.1);
+  border-left: 4px solid #ff003c;
+  color: #ff003c;
+  padding: 0.8rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+}
+
+/* Responsividad */
+@media (max-width: 900px) {
+  .login-overlay {
+    justify-content: center; /* Centrar el formulario en tablets/móviles */
+    padding: 2rem;
+    background: rgba(0, 5, 15, 0.6); /* Oscurecer un poco más el centro */
+  }
+}
+
+@media (max-width: 480px) {
+  .login-overlay {
+    padding: 1rem;
+  }
+  
+  .login-glass-card {
+    padding: 2rem 1.5rem;
+  }
+}
