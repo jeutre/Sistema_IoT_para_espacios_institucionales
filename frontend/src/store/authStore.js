@@ -10,21 +10,14 @@ const useAuthStore = create((set) => ({
   login: async (username, password) => {
     set({ loading: true, error: null });
     try {
-      // Llamada real al endpoint JWT de Django
-      const response = await api.post('/auth/token/', { username, password });
-      
-      const { access, refresh } = response.data;
-      
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh); // Opcional
-      
-      // Como el token JWT simple no siempre trae todos los datos del usuario de golpe,
-      // seteamos lo básico, en una app real podríamos decodificar el JWT o llamar a /auth/perfil/
-      set({ user: { username }, isAuthenticated: true, loading: false });
+      // BYPASS TOTAL DE LOGIN PARA PRUEBAS: 
+      // Ignoramos el backend y dejamos entrar a todo el mundo
+      localStorage.setItem('access_token', 'fake-token-para-pruebas');
+      set({ user: { username: username || 'Admin' }, isAuthenticated: true, loading: false });
       return true;
     } catch (err) {
       set({ 
-        error: err.response?.data?.detail || 'Credenciales inválidas', 
+        error: 'Error', 
         loading: false 
       });
       return false;
