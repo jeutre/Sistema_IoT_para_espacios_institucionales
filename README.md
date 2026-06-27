@@ -4,7 +4,10 @@ Este proyecto es una plataforma web para el monitoreo y gestión de dispositivos
 
 ## 🚀 Guía de Instalación Rápida
 
-Si acabas de clonar este repositorio en una computadora nueva, sigue estos pasos. Hemos simplificado el proceso incluyendo una base de datos local y configuración preestablecida.
+Si acabas de clonar este repositorio en una computadora nueva, sigue estos pasos. 
+
+> **💡 Nota sobre la portabilidad del proyecto:**
+> A diferencia de los proyectos estándar de Django que te obligan a reconstruir todo el entorno, la base de datos y los usuarios desde cero cada vez que cambias de PC, hemos "hackeado" este comportamiento. La base de datos (`db.sqlite3`) y las variables de entorno (`.env`) están intencionalmente incluidas en el repositorio. Esto significa que **al clonar el proyecto te llevas una copia exacta y funcional** (Plug & Play), ahorrándote horas de configuración y dolores de cabeza al cambiar de equipo.
 
 ### 1. Configurar el Backend (Django)
 
