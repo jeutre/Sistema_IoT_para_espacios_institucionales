@@ -55,7 +55,16 @@ Abre una **nueva** terminal (o pestaña) e ingresa a la carpeta del frontend:
 
 ### 3. Ejecutar el Proyecto ⚡
 
-Para correr el proyecto localmente, necesitas tener dos terminales abiertas al mismo tiempo:
+#### Opción A: Usando Docker (Recomendado 🐳)
+La forma más fácil y moderna de correr el proyecto en cualquier computadora sin instalar dependencias es usando Docker.
+Asegúrate de tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y simplemente ejecuta en la raíz del proyecto:
+```powershell
+docker-compose up -d --build
+```
+Esto levantará automáticamente tanto el backend en el puerto 8000 como el frontend en el puerto 5173.
+
+#### Opción B: Ejecución Manual
+Si no tienes Docker, necesitas tener dos terminales abiertas al mismo tiempo:
 
 - **Terminal 1 (Backend Django - Raíz del proyecto con venv activado):**
   ```powershell
