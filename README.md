@@ -15,69 +15,51 @@ Si acabas de clonar este repositorio en una computadora nueva, tienes dos opcion
 
 La forma más fácil y moderna de correr el proyecto en cualquier computadora sin instalar dependencias. **Si usas esta opción, NO necesitas instalar Python, Node.js, ni hacer los pasos manuales.**
 
-Asegúrate de tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y simplemente ejecuta en la terminal (en la raíz del proyecto):
+> ⚠️ **Requisito Indispensable:** Debes tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y abierto en tu computadora. Si al ejecutar el comando te sale un error diciendo que *'docker-compose' no se reconoce*, significa que **no lo tienes instalado** y debes usar la Opción B.
+
+Ejecuta en la terminal (en la raíz del proyecto):
 ```powershell
 docker-compose up -d --build
 ```
-Esto descargará todo lo necesario y levantará automáticamente tanto el backend en el puerto 8000 como el frontend en el puerto 5173.
-
-¡Listo! Ya puedes saltar a la sección de **Probar el Proyecto**.
+Esto descargará todo lo necesario y levantará automáticamente el backend en el puerto 8000 y el frontend en el puerto 5173. ¡Listo! Salta a la sección de **Probar el Proyecto**.
 
 ---
 
-### Opción B: Instalación y Ejecución Manual
+### Opción B: Ejecución Manual Local
 
-Si no tienes Docker instalado, deberás configurar ambos entornos de manera manual.
+Si el comando de Docker te dio error porque no lo tienes instalado, hazlo de forma manual. 
 
-#### 1. Configurar el Backend (Django)
+> **¿Ya habías ejecutado el proyecto en esta PC antes?**
+> Si es así, **sáltate los pasos 1 y 2** y ve directo al paso 3. Los pasos 1 y 2 son **sólo la primera vez** que descargas el código.
 
-Abre la terminal en la raíz del proyecto (`Sistema_IoT_para_espacios_institucionales`) y ejecuta:
+#### 1. Instalar Backend (Django) - *Sólo primera vez*
+Abre la terminal en la raíz y ejecuta:
+```powershell
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-1. **Crear entorno virtual de Python:**
-   ```powershell
-   python -m venv venv
-   ```
+#### 2. Instalar Frontend (React) - *Sólo primera vez*
+Abre otra terminal en la carpeta `/frontend` y ejecuta:
+```powershell
+npm install
+```
 
-2. **Activar el entorno virtual:**
-   - En Windows (Powershell):
-     ```powershell
-     .\venv\Scripts\activate
-     ```
-   - En Mac/Linux:
-     ```bash
-     source venv/bin/activate
-     ```
+> 🛑 **¿Error de ejecución de scripts en PowerShell?** 
+> Si al correr `npm` o activar el entorno (`.\venv\...`) te sale un texto rojo diciendo que "la ejecución de scripts está deshabilitada", debes correr este comando una sola vez como administrador en PowerShell para dar permisos:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` (presiona 'S' para confirmar).
 
-3. **Instalar dependencias del Backend:**
-   ```powershell
-   pip install -r requirements.txt
-   ```
-*(Nota: La base de datos `db.sqlite3` y las variables de entorno `.env` ya vienen preconfiguradas, no necesitas hacer migraciones).*
+#### 3. Levantar los servidores (Cada vez que vayas a programar)
+Necesitas tener dos terminales abiertas:
 
-#### 2. Configurar el Frontend (React/Vite)
-
-Abre una **nueva** terminal (o pestaña) e ingresa a la carpeta del frontend:
-
-1. **Ingresar a la carpeta:**
-   ```powershell
-   cd frontend
-   ```
-
-2. **Instalar dependencias de Node.js:**
-   ```powershell
-   npm install
-   ```
-
-#### 3. Ejecutar Manualmente
-
-Para correr el proyecto localmente, necesitas tener dos terminales abiertas al mismo tiempo:
-
-- **Terminal 1 (Backend Django - Raíz del proyecto con venv activado):**
+- **Terminal 1 (Raíz del proyecto):**
   ```powershell
+  .\venv\Scripts\activate
   python manage.py runserver
   ```
 
-- **Terminal 2 (Frontend React - Dentro de la carpeta /frontend):**
+- **Terminal 2 (Dentro de la carpeta /frontend):**
   ```powershell
   npm run dev
   ```
