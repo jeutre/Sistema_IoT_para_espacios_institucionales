@@ -30,6 +30,11 @@ docker-compose up -d --build
 
 Esto levantará el backend en el puerto 8000 y el frontend en el puerto 5173. ¡Listo! Salta a la sección de **Probar el Proyecto**.
 
+> 🛑 **¿Cómo apagar el proyecto en Docker?**
+> Como lo ejecutamos en segundo plano con la letra `-d`, los servidores seguirán corriendo aunque cierres la terminal. Cuando termines de trabajar y quieras apagarlos para no consumir memoria, simplemente abre la terminal en la raíz del proyecto y ejecuta:
+> ```powershell
+> docker-compose down
+> ```
 ---
 
 ### Opción B: Ejecución Manual Local
