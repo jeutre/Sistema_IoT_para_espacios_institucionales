@@ -15,13 +15,20 @@ Si acabas de clonar este repositorio en una computadora nueva, tienes dos opcion
 
 La forma más fácil y moderna de correr el proyecto en cualquier computadora sin instalar dependencias. **Si usas esta opción, NO necesitas instalar Python, Node.js, ni hacer los pasos manuales.**
 
-> ⚠️ **Requisito Indispensable:** Debes tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y abierto en tu computadora. Si al ejecutar el comando te sale un error diciendo que *'docker-compose' no se reconoce*, significa que **no lo tienes instalado** y debes usar la Opción B.
+> ⚠️ **Requisito Indispensable:** Debes tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado **Y ABIERTO** en tu computadora (debes ver la ballena cargando y decir "Engine running"). Si al ejecutar el comando te sale un error diciendo que *'docker-compose' no se reconoce* o *'failed to connect to the docker API'*, significa que Docker está cerrado o no lo tienes instalado, en cuyo caso debes usar la **Opción B**.
 
 Ejecuta en la terminal (en la raíz del proyecto):
 ```powershell
 docker-compose up -d --build
 ```
-Esto descargará todo lo necesario y levantará automáticamente el backend en el puerto 8000 y el frontend en el puerto 5173. ¡Listo! Salta a la sección de **Probar el Proyecto**.
+
+> **⏳ Ten paciencia (Sólo la primera vez):** 
+> La letra `-d` significa que se ejecutará de forma silenciosa en segundo plano. La consola te devolverá el control casi de inmediato y no verás letras moverse. **Sin embargo, Docker estará descargando GBs de información de internet**. 
+> Dale de **2 a 5 minutos** de tiempo antes de intentar abrir la página web, de lo contrario tu navegador dirá que no puede conectarse. 
+> 
+> *(Si prefieres ver el progreso en vivo en la consola, simplemente quita el `-d`: corre `docker-compose up --build`)*.
+
+Esto levantará el backend en el puerto 8000 y el frontend en el puerto 5173. ¡Listo! Salta a la sección de **Probar el Proyecto**.
 
 ---
 
