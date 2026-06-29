@@ -17,6 +17,15 @@ La forma más fácil y moderna de correr el proyecto en cualquier computadora si
 
 > ⚠️ **Requisito Indispensable:** Debes tener [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado **Y ABIERTO** en tu computadora (debes ver la ballena cargando y decir "Engine running"). Si al ejecutar el comando te sale un error diciendo que *'docker-compose' no se reconoce* o *'failed to connect to the docker API'*, significa que Docker está cerrado o no lo tienes instalado, en cuyo caso debes usar la **Opción B**.
 
+tienes que abrir un terminal en powershell como administrador y ejecutar el siguiente comando:
+```wsl --install
+```
+reinicia la pc o laptop
+
+instala docker desktop y tenlo abierto.
+
+ir a tu carpeta raiz del proyecto
+
 Ejecuta en la terminal (en la raíz del proyecto):
 ```powershell
 docker-compose up -d --build
