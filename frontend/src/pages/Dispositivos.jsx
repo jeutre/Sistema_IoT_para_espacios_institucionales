@@ -37,7 +37,18 @@ const Dispositivos = () => {
           </thead>
           <tbody>
             {loading && dispositivos.length === 0 ? (
-              <tr><td colSpan="6" style={{textAlign:'center', padding:'2rem'}}>Cargando dispositivos...</td></tr>
+              <>
+                {[...Array(5)].map((_, i) => (
+                  <tr key={`skeleton-${i}`} className="skeleton-row">
+                    <td><div className="skeleton skeleton-id"></div></td>
+                    <td><div className="skeleton skeleton-text"></div></td>
+                    <td><div className="skeleton skeleton-ip"></div></td>
+                    <td><div className="skeleton skeleton-text"></div></td>
+                    <td><div className="skeleton skeleton-badge"></div></td>
+                    <td><div className="skeleton skeleton-button"></div></td>
+                  </tr>
+                ))}
+              </>
             ) : dispositivos.map(disp => (
               <tr key={disp.id}>
                 <td className="log-id">#{disp.id}</td>

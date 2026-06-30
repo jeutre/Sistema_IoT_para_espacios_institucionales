@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import api from '../axiosConfig';
 
-const useAuthStore = create((set) => ({
+const useAuthStore = create((set, get) => ({
   user: null,
   isAuthenticated: false,
   error: null,
   loading: false,
+  refreshingToken: false,
   
   login: async (username, password) => {
     set({ loading: true, error: null });
@@ -16,10 +17,8 @@ const useAuthStore = create((set) => ({
       const { access, refresh } = response.data;
       
       localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh); // Opcional
+      localStorage.setItem('refresh_token', refresh);
       
-      // Como el token JWT simple no siempre trae todos los datos del usuario de golpe,
-      // seteamos lo básico, en una app real podríamos decodificar el JWT o llamar a /auth/perfil/
       set({ user: { username }, isAuthenticated: true, loading: false });
       return true;
     } catch (err) {
@@ -39,11 +38,48 @@ const useAuthStore = create((set) => ({
   
   checkAuth: () => {
     const token = localStorage.getItem('access_token');
-    // Idealmente verificar si el token está expirado, por ahora con que exista
     if (token) {
       set({ isAuthenticated: true });
     } else {
       set({ isAuthenticated: false, user: null });
+    }
+  },
+  
+  refreshToken: async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+      get().logout();
+      return false;
+    }
+    
+    set({ refreshingToken: true });
+    
+    try {
+      const response = await api.post('/auth/token/refresh/', { 
+        refresh: refreshToken 
+      });
+      
+      const { access } = response.data;
+      localStorage.setItem('access_token', access);
+      
+      set({ refreshingToken: false, isAuthenticated: true });
+      return true;
+    } catch (err) {
+      console.error('Error al refrescar token:', err);
+      get().logout();
+      set({ refreshingToken: false });
+      return false;
+    }
+  },
+  
+  getUserProfile: async () => {
+    try {
+      const response = await api.get('/auth/perfil/');
+      set({ user: response.data });
+      return response.data;
+    } catch (err) {
+      console.error('Error al obtener perfil:', err);
+      return null;
     }
   }
 }));

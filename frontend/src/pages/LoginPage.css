@@ -204,6 +204,26 @@
   font-size: 0.9rem;
 }
 
+/* Estilos para validación de formularios */
+.input-error {
+  border-color: #ff003c !important;
+  box-shadow: inset 0 0 10px rgba(255, 0, 60, 0.3) !important;
+}
+
+.validation-error {
+  color: #ff003c;
+  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  padding-left: 0.5rem;
+  text-align: left;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Responsividad */
 @media (max-width: 900px) {
   .login-overlay {
