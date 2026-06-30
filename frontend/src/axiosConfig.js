@@ -28,7 +28,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     
     // Si el error es 401 y no es una solicitud de refresh token
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+    if (error.response && error.response.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/token/refresh/')) {
       originalRequest._retry = true;
       
       try {

@@ -54,3 +54,17 @@ def logout_view(request):
 def perfil_view(request):
     return Response(UsuarioSerializer(request.user).data)
 
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_view(request):
+    from .serializers import RegisterSerializer
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        return Response({
+            'mensaje': 'Usuario creado exitosamente.',
+            'usuario': UsuarioSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

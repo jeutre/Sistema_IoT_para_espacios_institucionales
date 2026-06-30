@@ -37,8 +37,6 @@ const LoginPage = () => {
       case 'username':
         if (!value.trim()) {
           newErrors.username = 'El usuario es requerido';
-        } else if (value.length < 3) {
-          newErrors.username = 'Mínimo 3 caracteres';
         } else {
           delete newErrors.username;
         }
@@ -47,8 +45,6 @@ const LoginPage = () => {
       case 'password':
         if (!value) {
           newErrors.password = 'La contraseña es requerida';
-        } else if (value.length < 6) {
-          newErrors.password = 'Mínimo 6 caracteres';
         } else {
           delete newErrors.password;
         }
@@ -66,14 +62,10 @@ const LoginPage = () => {
     
     if (!formData.username.trim()) {
       newErrors.username = 'El usuario es requerido';
-    } else if (formData.username.length < 3) {
-      newErrors.username = 'Mínimo 3 caracteres';
     }
     
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Mínimo 6 caracteres';
     }
     
     setErrors(newErrors);
@@ -100,7 +92,7 @@ const LoginPage = () => {
   };
 
   const handleRegister = () => {
-    alert("El registro está temporalmente deshabilitado.");
+    navigate('/register');
   };
 
   const handleForgotPassword = () => {

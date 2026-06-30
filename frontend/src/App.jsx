@@ -5,6 +5,7 @@ import useThemeStore from './store/themeStore';
 
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import BiometricPage from './pages/BiometricPage';
 import PortalLayout from './pages/PortalLayout';
 import Dashboard from './pages/Dashboard';
@@ -63,6 +64,7 @@ function App() {
           {/* Zona Pública */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/biometria" element={<BiometricPage />} />
 
           {/* Zona Privada (Centro de Comando IoT) */}

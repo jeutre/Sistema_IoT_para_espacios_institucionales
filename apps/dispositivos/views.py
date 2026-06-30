@@ -40,9 +40,15 @@ class DispositivoViewSet(viewsets.ModelViewSet):
             error_detail = None
             
             try:
-                # Ejecutar ping con timeout
+                # Ejecutar ping con timeout compatible con Windows y Linux (Docker)
+                import platform
+                if platform.system().lower() == 'windows':
+                    ping_cmd = ['ping', '-n', '1', '-w', '1000', dispositivo.ip]
+                else:
+                    ping_cmd = ['ping', '-c', '1', '-W', '1', dispositivo.ip]
+                    
                 process = await asyncio.create_subprocess_exec(
-                    'ping', '-n', '1', '-w', '1000', dispositivo.ip,
+                    *ping_cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE
                 )

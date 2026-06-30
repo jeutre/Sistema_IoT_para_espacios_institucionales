@@ -30,6 +30,31 @@ const useAuthStore = create((set, get) => ({
     }
   },
   
+  register: async (userData) => {
+    set({ loading: true, error: null });
+    try {
+      await api.post('/auth/register/', userData);
+      
+      // Auto-login después de registro exitoso
+      const response = await api.post('/auth/token/', { 
+        username: userData.username, 
+        password: userData.password 
+      });
+      
+      const { access, refresh } = response.data;
+      localStorage.setItem('access_token', access);
+      localStorage.setItem('refresh_token', refresh);
+      
+      set({ user: { username: userData.username }, isAuthenticated: true, loading: false });
+      return true;
+    } catch (err) {
+      const errorMsg = err.response?.data?.username?.[0] || err.response?.data?.detail || 'Error al registrar usuario';
+      set({ error: errorMsg, loading: false });
+      return false;
+    }
+  },
+
+  
   logout: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
