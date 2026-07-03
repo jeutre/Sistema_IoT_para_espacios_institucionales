@@ -1,15 +1,49 @@
+import platform
+import asyncio
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework_api_key.permissions import HasAPIKey
-import subprocess
-import asyncio
 from asgiref.sync import sync_to_async
 
 from .models import Dispositivo, HistorialComunicacion
 from .serializers import DispositivoSerializer, HistorialComunicacionSerializer
+
+
+def _ping_args(ip: str) -> list:
+    """
+    Devuelve los argumentos correctos del comando ping según el SO.
+    Windows : ping -n 1 -w 1000 <ip>   (timeout en milisegundos)
+    Linux/Mac: ping -c 1 -W 1    <ip>   (timeout en segundos)
+    """
+    if platform.system().lower() == 'windows':
+        return ['ping', '-n', '1', '-w', '1000', ip]
+    return ['ping', '-c', '1', '-W', '1', ip]
+
+
+async def ejecutar_ping(ip: str) -> bool:
+    """
+    Ejecuta un ping real y devuelve True si el host responde.
+    Captura cualquier excepción para que nunca rompa la vista.
+    """
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *_ping_args(ip),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await asyncio.wait_for(process.communicate(), timeout=3)
+        return process.returncode == 0
+    except asyncio.TimeoutError:
+        try:
+            process.kill()
+        except Exception:
+            pass
+        return False
+    except Exception:
+        return False
 
 
 class DispositivoViewSet(viewsets.ModelViewSet):
@@ -22,20 +56,12 @@ class DispositivoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='ping')
     async def ping(self, request, pk=None):
         """
-        Verifica si el ESP32 responde (HU-07) - Asíncrono
+        Verifica si el ESP32 responde (HU-07).
+        Funciona en Windows y Linux/Mac.
         """
         dispositivo = await sync_to_async(self.get_object)()
-        
-        try:
-            process = await asyncio.create_subprocess_exec(
-                'ping', '-n', '1', '-w', '1000', dispositivo.ip,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            stdout, stderr = await process.communicate()
-            conectado = process.returncode == 0
-        except Exception:
-            conectado = False
+
+        conectado = await ejecutar_ping(dispositivo.ip)
 
         dispositivo.estado          = 'conectado' if conectado else 'desconectado'
         dispositivo.ultima_conexion = timezone.now()
@@ -63,7 +89,7 @@ class HistorialComunicacionViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='recibir', permission_classes=[HasAPIKey])
     def recibir(self, request):
         """
-        Endpoint que recibe mensajes del ESP32 (Protegido con API Key)
+        Endpoint que recibe mensajes del ESP32 (protegido con API Key).
         """
         dispositivo_id = request.data.get('dispositivo_id')
         mensaje        = request.data.get('mensaje')

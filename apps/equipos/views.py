@@ -1,31 +1,46 @@
+import platform
+import asyncio
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-import asyncio
-import platform
 from asgiref.sync import sync_to_async
 
 from .models import Equipo, EventoConexion
 from .serializers import EquipoSerializer, EventoConexionSerializer
 
 
-async def verificar_ping_async(ip):
+def _ping_args(ip: str) -> list:
     """
-    Ejecuta un ping real al equipo y devuelve True/False de forma asíncrona.
+    Devuelve los argumentos correctos del comando ping según el SO.
+    Windows : ping -n 1 -w 1000 <ip>   (timeout en milisegundos)
+    Linux/Mac: ping -c 1 -W 1    <ip>   (timeout en segundos)
     """
-    parametro_cantidad = '-n' if platform.system().lower() == 'windows' else '-c'
-    parametro_timeout = '-w' if platform.system().lower() == 'windows' else '-W'
-    timeout_val = '1000' if platform.system().lower() == 'windows' else '1'
+    if platform.system().lower() == 'windows':
+        return ['ping', '-n', '1', '-w', '1000', ip]
+    return ['ping', '-c', '1', '-W', '1', ip]
+
+
+async def ejecutar_ping(ip: str) -> bool:
+    """
+    Ejecuta un ping real y devuelve True si el host responde.
+    Incluye timeout de seguridad para que nunca se quede colgado.
+    """
     try:
         process = await asyncio.create_subprocess_exec(
-            'ping', parametro_cantidad, '1', parametro_timeout, timeout_val, ip,
+            *_ping_args(ip),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        await process.communicate()
+        await asyncio.wait_for(process.communicate(), timeout=3)
         return process.returncode == 0
+    except asyncio.TimeoutError:
+        try:
+            process.kill()
+        except Exception:
+            pass
+        return False
     except Exception:
         return False
 
@@ -62,7 +77,7 @@ class EquipoViewSet(viewsets.ModelViewSet):
         queryset    = Equipo.objects.all()
         laboratorio = self.request.query_params.get('laboratorio')
         activo      = self.request.query_params.get('activo')
-        estado      = self.request.query_params.get('estado')  # HU-15 / HU-16
+        estado      = self.request.query_params.get('estado')
 
         if laboratorio:
             queryset = queryset.filter(laboratorio__id=laboratorio)
@@ -79,7 +94,7 @@ class EquipoViewSet(viewsets.ModelViewSet):
         Verifica conectividad de UN equipo. (HU-14)
         """
         equipo   = await sync_to_async(self.get_object)()
-        responde = await verificar_ping_async(equipo.ip)
+        responde = await ejecutar_ping(equipo.ip)
         cambio   = await actualizar_estado_equipo(equipo, responde)
 
         return Response({
@@ -95,11 +110,13 @@ class EquipoViewSet(viewsets.ModelViewSet):
     async def ping_todos(self, request):
         """
         Verifica conectividad de TODOS los equipos concurrentemente. (HU-14)
+        Los pings corren en paralelo — no en secuencia — así 30 equipos
+        tardan lo mismo que 1 solo ping.
         """
         equipos = await sync_to_async(list)(Equipo.objects.filter(activo=True))
-        
+
         async def procesar_equipo(equipo):
-            responde = await verificar_ping_async(equipo.ip)
+            responde = await ejecutar_ping(equipo.ip)
             cambio   = await actualizar_estado_equipo(equipo, responde)
             return {
                 'equipo':           equipo.nombre,
@@ -108,7 +125,7 @@ class EquipoViewSet(viewsets.ModelViewSet):
                 'cambio_de_estado': cambio,
             }
 
-        tasks = [procesar_equipo(e) for e in equipos]
+        tasks      = [procesar_equipo(e) for e in equipos]
         resultados = await asyncio.gather(*tasks)
 
         total_activos = sum(1 for r in resultados if r['estado_conexion'] == 'activo')
@@ -150,7 +167,7 @@ class EquipoViewSet(viewsets.ModelViewSet):
 class EventoConexionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Listado general de TODOS los eventos de conexión/desconexión. (HU-17)
-    Solo lectura: estos eventos los crea el sistema automáticamente, nadie los edita a mano.
+    Solo lectura: estos eventos los crea el sistema automáticamente.
     """
     serializer_class   = EventoConexionSerializer
     permission_classes = [IsAuthenticated]
