@@ -9,7 +9,7 @@ class DispositivoSerializer(serializers.ModelSerializer):
     
     class Meta:
         model  = Dispositivo
-        fields = ['id', 'laboratorio', 'laboratorio_nombre', 'identificador', 'ip', 'estado', 'ultima_conexion', 'creado_en']
+        fields = ['id', 'laboratorio', 'laboratorio_nombre', 'identificador', 'mac_address', 'ip', 'estado', 'ultima_conexion', 'creado_en']
         read_only_fields = ['id', 'estado', 'ultima_conexion', 'creado_en', 'laboratorio_nombre']
 
     def validate_ip(self, value):

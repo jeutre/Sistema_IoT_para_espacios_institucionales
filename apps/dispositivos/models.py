@@ -10,6 +10,7 @@ class Dispositivo(models.Model):
 
     laboratorio       = models.ForeignKey(Laboratorio, on_delete=models.CASCADE, related_name='dispositivos')
     identificador     = models.CharField(max_length=100, unique=True)
+    mac_address       = models.CharField(max_length=17, unique=True, blank=True, null=True, help_text="Dirección MAC del ESP32 (ej: AA:BB:CC:DD:EE:FF)")
     ip                = models.GenericIPAddressField()
     estado            = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='desconectado')
     ultima_conexion   = models.DateTimeField(null=True, blank=True)

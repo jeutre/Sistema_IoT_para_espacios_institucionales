@@ -61,11 +61,19 @@ const useAuthStore = create((set, get) => ({
     set({ user: null, isAuthenticated: false, error: null });
   },
   
-  checkAuth: () => {
+  checkAuth: async () => {
     const token = localStorage.getItem('access_token');
-    if (token) {
-      set({ isAuthenticated: true });
-    } else {
+    if (!token) {
+      set({ isAuthenticated: false, user: null });
+      return;
+    }
+    try {
+      const response = await api.get('/auth/perfil/');
+      set({ user: response.data, isAuthenticated: true });
+    } catch {
+      // Token inválido o expirado
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       set({ isAuthenticated: false, user: null });
     }
   },
