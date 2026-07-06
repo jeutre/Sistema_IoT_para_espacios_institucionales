@@ -94,7 +94,53 @@ Puedes iniciar sesión con el usuario de pruebas por defecto:
 - **Usuario:** `admin`
 - **Contraseña:** `admin`
 
-## 📡 Conexión de Hardware (ESP32)
+## �️ Documentación del Frontend
+
+La interfaz web está construida con React + Vite y se encarga de consumir la API del backend para mostrar información operativa y permitir la interacción con el sistema.
+
+### Tecnologías del frontend
+- React 19
+- Vite
+- Zustand para manejo de estado global
+- React Router DOM para navegación
+- Axios para comunicación con la API
+
+### Estructura principal
+- [frontend/src/main.jsx](frontend/src/main.jsx): punto de entrada de la aplicación.
+- [frontend/src/App.jsx](frontend/src/App.jsx): configuración de rutas y protección de vistas.
+- [frontend/src/pages](frontend/src/pages): páginas de la interfaz como login, dashboard, dispositivos, ocupación, alertas y reportes.
+- [frontend/src/store](frontend/src/store): almacenes globales para autenticación, tema, toast y estado IoT.
+- [frontend/src/axiosConfig.js](frontend/src/axiosConfig.js): configuración centralizada de Axios, tokens JWT y refresh automático.
+
+### Rutas principales
+- `/`: landing page pública.
+- `/login`: inicio de sesión.
+- `/register`: registro de usuarios.
+- `/biometria`: vista de autenticación biométrica.
+- `/dashboard`: panel principal protegido.
+- `/dashboard/dispositivos`: gestión de dispositivos.
+- `/dashboard/ocupacion`: visualización de ocupación.
+- `/dashboard/alertas`: listado de alertas.
+- `/dashboard/reportes`: reportes del sistema.
+- `/dashboard/auditoria`: auditoría y trazabilidad.
+
+### Flujo de autenticación
+El frontend usa Zustand para administrar el estado de sesión. Al iniciar sesión, guarda los tokens JWT en el almacenamiento local y los reutiliza en las peticiones con Axios. Si un token expira, se intenta refrescar automáticamente antes de redirigir al login.
+
+### Comandos útiles
+Desde la carpeta [frontend](frontend):
+```powershell
+npm install
+npm run dev
+npm run build
+```
+
+### Notas de desarrollo
+- Las rutas privadas están protegidas mediante un componente de validación de autenticación.
+- El diseño está dividido en páginas y componentes reutilizables.
+- Los mensajes de feedback al usuario se gestionan con un sistema de toasts.
+
+## �📡 Conexión de Hardware (ESP32)
 
 Para vincular dispositivos físicos (ESP32):
 1. Inicia sesión en el panel admin de Django: `http://localhost:8000/admin/`.
