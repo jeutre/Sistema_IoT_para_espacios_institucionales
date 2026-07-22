@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
+<<<<<<< Updated upstream
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import useToastStore from '../store/toastStore';
 import loginBgEs from '../assets/login-bg-es.png';
+=======
+import { Link } from 'react-router-dom';
+import loginBg from '../assets/imagen01.png';
+>>>>>>> Stashed changes
 import logo from '../assets/logo.png';
 import './LoginPage.css';
 
 const RegisterPage = () => {
+<<<<<<< Updated upstream
   const [formData, setFormData] = useState({ 
     firstName: '',
     lastName: '',
@@ -300,10 +306,167 @@ const RegisterPage = () => {
               VOLVER AL LOGIN
             </button>
           </form>
+=======
+  const [regData, setRegData] = useState({ username: '', email: '', password: '', confirmPassword: '' });
+  const [regStep, setRegStep] = useState(1);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setRegData({ ...regData, [name]: value });
+    if (name === 'password') {
+      let strength = 0;
+      if (value.length >= 6) strength += 25;
+      if (value.length >= 10) strength += 25;
+      if (/[A-Z]/.test(value)) strength += 15;
+      if (/[0-9]/.test(value)) strength += 15;
+      if (/[^A-Za-z0-9]/.test(value)) strength += 20;
+      setPasswordStrength(strength);
+    }
+  };
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    if (regData.password !== regData.confirmPassword) {
+      alert('Las contraseñas no coinciden');
+      return;
+    }
+    setRegStep(2);
+    setTimeout(() => setRegStep(3), 2000);
+  };
+
+  const getStrengthLabel = () => {
+    if (passwordStrength <= 25) return { label: 'Débil', color: '#ff4444' };
+    if (passwordStrength <= 50) return { label: 'Regular', color: '#ffaa00' };
+    if (passwordStrength <= 75) return { label: 'Buena', color: '#00d4ff' };
+    return { label: 'Fuerte', color: '#00ff88' };
+  };
+
+  return (
+    <div className="login-fullscreen-layout" style={{ backgroundImage: `url(${loginBg})` }}>
+      <div className="login-circuit-grid" />
+      
+      <div className="login-overlay">
+        <div className="login-glass-card">
+          <div className="card-corner top-left" />
+          <div className="card-corner top-right" />
+          <div className="card-corner bottom-left" />
+          <div className="card-corner bottom-right" />
+
+          <div className="login-brand">
+            <img src={logo} alt="Tecnoecuatoriano Logo" className="login-logo" />
+            <p className="brand-title">Crear Nueva Cuenta</p>
+          </div>
+
+          {regStep === 1 && (
+            <form onSubmit={handleRegister} className="auth-form">
+              <div className="reg-steps">
+                <div className="step active">1</div>
+                <div className="step-line" />
+                <div className="step">2</div>
+                <div className="step-line" />
+                <div className="step">3</div>
+              </div>
+
+              <div className="input-group">
+                <label><span className="input-icon">👤</span> Nombre de usuario</label>
+                <input type="text" name="username" value={regData.username} onChange={handleChange}
+                  required placeholder="Ej: juan.perez" />
+                <div className="input-glow" />
+              </div>
+
+              <div className="input-group">
+                <label><span className="input-icon">📧</span> Correo electrónico</label>
+                <input type="email" name="email" value={regData.email} onChange={handleChange}
+                  required placeholder="correo@institucion.edu.ec" />
+                <div className="input-glow" />
+              </div>
+
+              <div className="input-group">
+                <label><span className="input-icon">🔒</span> Contraseña</label>
+                <div className="password-wrapper">
+                  <input type={showPassword ? 'text' : 'password'} name="password" value={regData.password}
+                    onChange={handleChange} required placeholder="Mínimo 6 caracteres" />
+                  <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                <div className="password-strength-bar">
+                  <div className="strength-fill" style={{ width: `${passwordStrength}%`, backgroundColor: getStrengthLabel().color }} />
+                </div>
+                <span className="strength-label" style={{ color: getStrengthLabel().color }}>
+                  {passwordStrength > 0 ? getStrengthLabel().label : ''}
+                </span>
+                <div className="input-glow" />
+              </div>
+
+              <div className="input-group">
+                <label><span className="input-icon">🔐</span> Confirmar contraseña</label>
+                <input type={showPassword ? 'text' : 'password'} name="confirmPassword" value={regData.confirmPassword}
+                  onChange={handleChange} required placeholder="Repite la contraseña"
+                  style={regData.confirmPassword && regData.password !== regData.confirmPassword ? { borderColor: '#ff4444' } : {}} />
+                {regData.confirmPassword && regData.password !== regData.confirmPassword && (
+                  <span className="field-error">Las contraseñas no coinciden</span>
+                )}
+                <div className="input-glow" />
+              </div>
+
+              <div className="terms-check">
+                <input type="checkbox" id="terms" required />
+                <label htmlFor="terms">Acepto los <a href="#terms">términos y condiciones</a></label>
+              </div>
+
+              <button type="submit" className="btn-primary cyber-btn">CREAR CUENTA</button>
+
+              <div className="auth-switch">
+                <span>¿Ya tienes cuenta?</span>
+                <Link to="/login" className="text-btn highlight">Iniciar sesión</Link>
+              </div>
+            </form>
+          )}
+
+          {regStep === 2 && (
+            <div className="verification-panel">
+              <div className="verif-icon">📧</div>
+              <h3>Verifica tu correo</h3>
+              <p className="verif-text">Hemos enviado un código de verificación a <strong>{regData.email}</strong></p>
+              <div className="code-inputs">
+                {[1,2,3,4].map(i => (
+                  <input key={i} type="text" maxLength="1" className="code-digit"
+                    onKeyUp={(e) => {
+                      if (e.target.value && e.target.nextSibling) e.target.nextSibling.focus();
+                    }} />
+                ))}
+              </div>
+              <p className="verif-resend">¿No recibiste el código? <button type="button" className="text-btn">Reenviar</button></p>
+            </div>
+          )}
+
+          {regStep === 3 && (
+            <div className="success-panel">
+              <div className="success-icon">
+                <svg viewBox="0 0 50 50">
+                  <circle cx="25" cy="25" r="23" fill="none" stroke="#00ff88" strokeWidth="3" />
+                  <path d="M15 25 L22 32 L35 18" fill="none" stroke="#00ff88" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3>¡Registro Exitoso!</h3>
+              <p>Tu cuenta ha sido creada correctamente. Ahora puedes iniciar sesión.</p>
+              <Link to="/login" className="btn-primary cyber-btn" style={{ textDecoration: 'none', display: 'inline-block', maxWidth: '280px' }}>
+                IR A INICIAR SESIÓN
+              </Link>
+            </div>
+          )}
+>>>>>>> Stashed changes
         </div>
       </div>
     </div>
   );
 };
 
+<<<<<<< Updated upstream
 export default RegisterPage;
+=======
+export default RegisterPage;
+>>>>>>> Stashed changes
