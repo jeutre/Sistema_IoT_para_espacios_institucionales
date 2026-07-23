@@ -24,5 +24,5 @@ COPY . /app/
 # Exponer el puerto
 EXPOSE 8000
 
-# Script de entrada para correr migraciones, inicializar admin y arrancar
-CMD ["sh", "-c", "python manage.py migrate && python manage.py init_admin && python manage.py runserver 0.0.0.0:8000"]
+# Script de entrada para crear carpeta de logs, correr migraciones, inicializar admin y arrancar
+CMD ["sh", "-c", "mkdir -p /app/logs && touch /app/logs/django.log && python manage.py migrate && python manage.py init_admin && python manage.py runserver 0.0.0.0:8000"]
