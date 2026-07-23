@@ -67,11 +67,23 @@ const useAuthStore = create((set, get) => ({
       set({ isAuthenticated: false, user: null });
       return;
     }
+    
+    // Si hay token, primero intentar con el perfil
     try {
       const response = await api.get('/auth/perfil/');
       set({ user: response.data, isAuthenticated: true });
-    } catch {
-      // Token inválido o expirado
+      return;
+    } catch (err) {
+      // Si es error de red (backend no disponible), mantener sesión
+      if (!err.response || err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        set({ 
+          user: { username: localStorage.getItem('last_username') || 'Usuario' }, 
+          isAuthenticated: true 
+        });
+        return;
+      }
+      
+      // Si el backend respondió con error (401, 403, etc), cerrar sesión
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       set({ isAuthenticated: false, user: null });

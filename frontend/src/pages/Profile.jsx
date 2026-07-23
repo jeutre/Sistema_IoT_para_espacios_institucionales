@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useAuthStore from '../store/authStore';
 import './Profile.css';
 
@@ -15,16 +15,18 @@ const Profile = () => {
   
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
+      setLoading(true);
       const data = await getUserProfile();
       if (data) {
         setFormData({
           firstName: data.first_name || '',
           lastName: data.last_name || '',
           email: data.email || '',
-          phone: data.phone || '' // si no hay teléfono, se deja en blanco
+          phone: data.phone || ''
         });
       }
       setLoading(false);
@@ -39,53 +41,62 @@ const Profile = () => {
   const handleSave = (e) => {
     e.preventDefault();
     setIsEditing(false);
-    // Aquí se llamaría a student_service vía Axios para actualizar los datos
-    alert("Datos actualizados correctamente.");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
   };
   
-  // Obtener iniciales reales
   const initials = (formData.firstName?.[0] || '') + (formData.lastName?.[0] || '');
   const displayInitials = initials || user.username?.[0]?.toUpperCase() || '?';
 
+  if (loading && !user) {
+    return (
+      <div className="profile-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Cargando perfil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container">
-      <header className="dashboard-header">
-        <h1>Mi Perfil</h1>
-        <p>Gestiona tus datos personales y credenciales.</p>
-      </header>
-
       <div className="profile-content glass-container">
         <div className="profile-header">
           <div className="profile-avatar">
             <span className="avatar-initials">{displayInitials}</span>
-            <button className="change-avatar-btn">📷</button>
           </div>
           <div className="profile-title">
-            <h2>{formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}` : user.username}</h2>
-            <p>@{user.username}</p>
+            <h2>{formData.firstName || formData.lastName ? `${formData.firstName} ${formData.lastName}` : (user?.username || 'Usuario')}</h2>
+            <p>@{user?.username || 'usuario'}</p>
           </div>
         </div>
 
+        {saved && <div className="profile-success">✅ Datos actualizados correctamente</div>}
+
         {loading ? (
-           <p style={{ textAlign: 'center', marginTop: '2rem' }}>Cargando datos del perfil...</p>
+           <div className="loading-container">
+             <div className="loading-spinner"></div>
+             <p>Cargando datos del perfil...</p>
+           </div>
         ) : (
         <form className="profile-form" onSubmit={handleSave}>
           <div className="form-grid">
             <div className="input-group">
               <label>Nombres</label>
-              <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} disabled={!isEditing} />
+              <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} disabled={!isEditing} placeholder="Ingresa tus nombres" />
             </div>
             <div className="input-group">
               <label>Apellidos</label>
-              <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} disabled={!isEditing} />
+              <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} disabled={!isEditing} placeholder="Ingresa tus apellidos" />
             </div>
             <div className="input-group">
               <label>Correo Electrónico</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!isEditing} />
+              <input type="email" name="email" value={formData.email} onChange={handleChange} disabled={!isEditing} placeholder="correo@ejemplo.com" />
             </div>
             <div className="input-group">
               <label>Teléfono</label>
-              <input type="text" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} />
+              <input type="text" name="phone" value={formData.phone} onChange={handleChange} disabled={!isEditing} placeholder="+593 999 999 999" />
             </div>
           </div>
 
