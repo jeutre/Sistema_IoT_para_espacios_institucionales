@@ -10,6 +10,7 @@ from asgiref.sync import sync_to_async
 
 from .models import Dispositivo, HistorialComunicacion
 from .serializers import DispositivoSerializer, HistorialComunicacionSerializer
+from .utils import log_device_ping, log_device_connection_change
 
 
 def _ping_args(ip: str) -> list:
@@ -23,27 +24,36 @@ def _ping_args(ip: str) -> list:
     return ['ping', '-c', '1', '-W', '1', ip]
 
 
-async def ejecutar_ping(ip: str) -> bool:
+async def ejecutar_ping(ip: str) -> tuple:
     """
-    Ejecuta un ping real y devuelve True si el host responde.
+    Ejecuta un ping real y devuelve (conectado: bool, error_detail: str | None).
     Captura cualquier excepción para que nunca rompa la vista.
     """
+    conectado = False
+    error_detail = None
     try:
         process = await asyncio.create_subprocess_exec(
             *_ping_args(ip),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
         )
-        await asyncio.wait_for(process.communicate(), timeout=3)
-        return process.returncode == 0
+        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=3)
+        conectado = process.returncode == 0
+        if stderr:
+            error_detail = stderr.decode('utf-8', errors='ignore')
+    except FileNotFoundError:
+        error_detail = 'Comando ping no encontrado en el sistema'
+    except PermissionError:
+        error_detail = 'Permiso denegado para ejecutar ping'
     except asyncio.TimeoutError:
         try:
             process.kill()
         except Exception:
             pass
-        return False
-    except Exception:
-        return False
+        error_detail = 'Timeout al ejecutar ping'
+    except Exception as e:
+        error_detail = f'Error inesperado: {str(e)}'
+    return conectado, error_detail
 
 
 class DispositivoViewSet(viewsets.ModelViewSet):
@@ -59,20 +69,58 @@ class DispositivoViewSet(viewsets.ModelViewSet):
         Verifica si el ESP32 responde (HU-07).
         Funciona en Windows y Linux/Mac.
         """
-        dispositivo = await sync_to_async(self.get_object)()
+        try:
+            dispositivo = await sync_to_async(self.get_object)()
 
-        conectado = await ejecutar_ping(dispositivo.ip)
+            # Validar que la IP sea válida antes de hacer ping
+            if not dispositivo.ip:
+                return Response({
+                    'error': 'El dispositivo no tiene una IP configurada',
+                    'dispositivo': dispositivo.identificador,
+                    'estado': 'error'
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-        dispositivo.estado          = 'conectado' if conectado else 'desconectado'
-        dispositivo.ultima_conexion = timezone.now()
-        await sync_to_async(dispositivo.save)()
+            conectado, error_detail = await ejecutar_ping(dispositivo.ip)
 
-        return Response({
-            'dispositivo': dispositivo.identificador,
-            'ip':          dispositivo.ip,
-            'estado':      dispositivo.estado,
-            'timestamp':   dispositivo.ultima_conexion,
-        })
+            old_status = dispositivo.estado
+            dispositivo.estado          = 'conectado' if conectado else 'desconectado'
+            dispositivo.ultima_conexion = timezone.now()
+            await sync_to_async(dispositivo.save)()
+
+            # Loggear el evento de ping
+            log_device_ping(
+                device_id=dispositivo.identificador,
+                ip=dispositivo.ip,
+                status='conectado' if conectado else 'desconectado',
+                error=error_detail if not conectado else None
+            )
+
+            # Loggear cambio de estado si hubo
+            if old_status != dispositivo.estado:
+                log_device_connection_change(
+                    device_id=dispositivo.identificador,
+                    old_status=old_status,
+                    new_status=dispositivo.estado
+                )
+
+            response_data = {
+                'dispositivo': dispositivo.identificador,
+                'ip':          dispositivo.ip,
+                'estado':      dispositivo.estado,
+                'timestamp':   dispositivo.ultima_conexion,
+                'conectado':   conectado,
+            }
+
+            if error_detail and not conectado:
+                response_data['error_detail'] = error_detail
+
+            return Response(response_data)
+
+        except Exception as e:
+            return Response({
+                'error': 'Error interno al procesar la solicitud de ping',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HistorialComunicacionViewSet(viewsets.ModelViewSet):

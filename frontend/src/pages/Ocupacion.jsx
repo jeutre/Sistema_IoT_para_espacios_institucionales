@@ -24,7 +24,22 @@ const Ocupacion = () => {
 
       <div className="ocupacion-grid">
         {loading && ocupacion.length === 0 ? (
-          <p>Cargando datos de sensores...</p>
+          <>
+            {[...Array(6)].map((_, i) => (
+              <div key={`skeleton-${i}`} className="glass-container ocupacion-card skeleton">
+                <div className="card-header">
+                  <div className="skeleton skeleton-title"></div>
+                  <div className="skeleton skeleton-badge"></div>
+                </div>
+                
+                <div className="card-body">
+                  <div className="skeleton skeleton-icon"></div>
+                  <div className="skeleton skeleton-status"></div>
+                  <div className="skeleton skeleton-time"></div>
+                </div>
+              </div>
+            ))}
+          </>
         ) : ocupacion.map(evento => (
           <div key={evento.id} className={`glass-container ocupacion-card ${evento.estado}`}>
             <div className="card-header">

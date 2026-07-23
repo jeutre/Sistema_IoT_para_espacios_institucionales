@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
+import ThemeToggle from '../components/ThemeToggle';
 import './PortalLayout.css';
 
 const PortalLayout = () => {
@@ -38,9 +39,13 @@ const PortalLayout = () => {
             Auditoría
           </NavLink>
         </nav>
-        <button className="btn-secondary logout-btn" onClick={() => logout()}>
-          Cerrar Sesión
-        </button>
+        
+        <div className="sidebar-footer">
+          <ThemeToggle />
+          <button className="btn-secondary logout-btn" onClick={() => logout()}>
+            Cerrar Sesión
+          </button>
+        </div>
       </aside>
 
       <main className="portal-content">

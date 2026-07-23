@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-print(">>> cargando autenticacion/urls.py")
 
 
 urlpatterns = [

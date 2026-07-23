@@ -18,7 +18,23 @@ const AlertasIoT = () => {
 
       <div className="glass-container alertas-wrapper">
         <div className="alertas-list">
-          {alertas.length === 0 ? (
+          {loading && alertas.length === 0 ? (
+            <>
+              {[...Array(4)].map((_, i) => (
+                <div key={`skeleton-${i}`} className="alerta-item skeleton">
+                  <div className="skeleton skeleton-icon"></div>
+                  <div className="alerta-content">
+                    <div className="alerta-header">
+                      <div className="skeleton skeleton-title"></div>
+                      <div className="skeleton skeleton-time"></div>
+                    </div>
+                    <div className="skeleton skeleton-message"></div>
+                  </div>
+                  <div className="skeleton skeleton-button"></div>
+                </div>
+              ))}
+            </>
+          ) : alertas.length === 0 ? (
             <p className="no-alertas">No hay alertas activas en el sistema.</p>
           ) : (
             alertas.map(alerta => (
