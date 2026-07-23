@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
-import loginBgEs from '../assets/login-bg-es.png';
+import loginBgEs from '../assets/imagen01.png';
 import logo from '../assets/logo.png';
 import './LoginPage.css';
 
@@ -96,7 +96,7 @@ const LoginPage = () => {
   };
 
   const handleForgotPassword = () => {
-    alert("Función de recuperación de contraseña en desarrollo.");
+    navigate('/forgot-password');
   };
 
   return (

@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 import './BiometricPage.css';
+import api from '../axiosConfig';
 
 const BiometricPage = () => {
   const videoRef = useRef(null);
@@ -40,26 +41,31 @@ const BiometricPage = () => {
     }
   };
 
-  const captureAndVerify = () => {
+  const captureAndVerify = async () => {
     if (!videoRef.current || !canvasRef.current) return;
     
     setIsVerifying(true);
+    setError('');
     
     const context = canvasRef.current.getContext('2d');
     context.drawImage(videoRef.current, 0, 0, 300, 225);
     
-    // Obtener la imagen en base64
     const imageData = canvasRef.current.toDataURL('image/jpeg');
     
-    // Aquí se enviaría `imageData` al backend para validación biométrica.
-    // Simulamos un retraso de red.
-    setTimeout(() => {
-      setIsVerifying(false);
-      // Simular éxito y redirigir al dashboard
+    try {
+      // Llamada real al backend para la validación biométrica.
+      // El endpoint '/auth/verify-biometric/' es un ejemplo.
+      await api.post('/auth/verify-biometric/', { image: imageData });
+
       alert("¡Identidad verificada exitosamente!");
       stopCamera();
       navigate('/dashboard');
-    }, 2000);
+    } catch (err) {
+      setError('Verificación fallida. Inténtalo de nuevo.');
+      console.error("Error en la verificación biométrica:", err);
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (

@@ -89,3 +89,23 @@
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+.chart-wrapper {
+  flex-grow: 1;
+  min-height: 300px;
+  position: relative;
+}
+
+.reportes-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.export-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
