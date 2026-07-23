@@ -1,69 +1,99 @@
-.dispositivos-container {
+.page-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.2rem;
 }
 
-.dispositivos-wrapper {
-  overflow-x: auto;
-  padding: 1.5rem;
-}
-
-.toolbar {
+.toolbar-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.dispositivos-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
 }
 
-.dispositivos-table th, 
-.dispositivos-table td {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.95rem;
+.toolbar-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: rgba(255,255,255,0.4);
 }
 
-.dispositivos-table th {
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
+.toolbar-search .search-input {
+  border: none;
+  background: none;
+  padding: 0;
+  width: 200px;
 }
 
-.disp-identificador {
-  color: #a78bfa;
+.toolbar-search:focus-within {
+  border-color: rgba(0, 240, 255, 0.4);
 }
 
-.disp-ip {
-  font-family: monospace;
-  color: #94a3b8;
+.card-table-wrapper {
+  overflow-x: auto;
 }
 
-.estado-badge {
-  display: inline-block;
-  padding: 0.3rem 0.8rem;
-  border-radius: 12px;
+.cell-mono {
+  font-family: 'Consolas', monospace;
   font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+.cell-highlight {
+  color: #00f0ff;
   font-weight: 600;
-  letter-spacing: 0.5px;
 }
 
-.estado-badge.conectado {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
+.cell-muted {
+  color: rgba(255,255,255,0.35);
+  font-size: 0.8rem;
 }
 
-.estado-badge.desconectado {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
+.cell-actions {
+  display: flex;
+  gap: 0.4rem;
 }
 
-.ml-2 {
-  margin-left: 0.5rem;
+.empty-state {
+  text-align: center;
+  padding: 3rem !important;
+  color: rgba(255,255,255,0.3);
+  font-style: italic;
+}
+
+.skeleton-cell {
+  height: 12px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.3; }
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-badge.online .status-dot {
+  box-shadow: 0 0 6px currentColor;
 }

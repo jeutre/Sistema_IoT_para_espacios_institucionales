@@ -1,76 +1,101 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useIotStore from '../store/iotStore';
 import './Dispositivos.css';
 
 const Dispositivos = () => {
   const { dispositivos, fetchDispositivos, loading } = useIotStore();
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('todos');
 
   useEffect(() => {
     fetchDispositivos();
   }, [fetchDispositivos]);
 
+  const filtered = dispositivos.filter(d => {
+    const matchesSearch = d.identificador?.toLowerCase().includes(search.toLowerCase()) || 
+                          d.ip?.includes(search);
+    const matchesFilter = filterStatus === 'todos' || d.estado === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
   return (
-    <div className="dispositivos-container">
-      <header className="dashboard-header">
-        <h1>Gestión de Dispositivos ESP32</h1>
-        <p>Monitoreo y administración de microcontroladores IoT.</p>
-      </header>
-
-      <div className="glass-container dispositivos-wrapper">
-        <div className="toolbar">
-          <button className="btn-primary" onClick={fetchDispositivos} disabled={loading}>
-            {loading ? 'Sincronizando...' : '↻ Actualizar Lista'}
-          </button>
-          <input type="text" placeholder="Buscar por identificador o IP..." className="search-input" />
+    <div className="page-container">
+      <div className="toolbar-row">
+        <div className="toolbar-left">
+          <div className="toolbar-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="text" 
+              placeholder="Buscar por ID o IP..." 
+              className="search-input"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <select className="filter-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="todos">Todos los estados</option>
+            <option value="conectado">En línea</option>
+            <option value="desconectado">Fuera de línea</option>
+          </select>
         </div>
+        <button className="btn-primary" onClick={fetchDispositivos} disabled={loading}>
+          {loading ? '↻ Sincronizando...' : '↻ Actualizar'}
+        </button>
+      </div>
 
-        <table className="dispositivos-table">
-          <thead>
-            <tr>
-              <th>ID Sistema</th>
-              <th>Identificador</th>
-              <th>Dirección IP</th>
-              <th>Laboratorio / Ubicación</th>
-              <th>Estado de Red</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && dispositivos.length === 0 ? (
-              <>
-                {[...Array(5)].map((_, i) => (
-                  <tr key={`skeleton-${i}`} className="skeleton-row">
-                    <td><div className="skeleton skeleton-id"></div></td>
-                    <td><div className="skeleton skeleton-text"></div></td>
-                    <td><div className="skeleton skeleton-ip"></div></td>
-                    <td><div className="skeleton skeleton-text"></div></td>
-                    <td><div className="skeleton skeleton-badge"></div></td>
-                    <td><div className="skeleton skeleton-button"></div></td>
-                  </tr>
-                ))}
-              </>
-            ) : dispositivos.map(disp => (
-              <tr key={disp.id}>
-                <td className="log-id">#{disp.id}</td>
-                <td className="disp-identificador"><strong>{disp.identificador}</strong></td>
-                <td className="disp-ip">{disp.ip}</td>
-                <td>{disp.laboratorio?.nombre || 'Sin asignar'}</td>
-                <td>
-                  <span className={`estado-badge ${disp.estado === 'conectado' ? 'conectado' : 'desconectado'}`}>
-                    {disp.estado === 'conectado' ? '● En línea' : '○ Fuera de línea'}
-                  </span>
-                </td>
-                <td>
-                  <button className="btn-secondary btn-sm" disabled={disp.estado !== 'conectado'}>Ping</button>
-                  <button className="btn-secondary btn-sm ml-2">Configurar</button>
-                </td>
+      <div className="page-card">
+        <div className="card-table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Identificador</th>
+                <th>IP</th>
+                <th>Ubicación</th>
+                <th>Estado</th>
+                <th>Última Conexión</th>
+                <th>Acciones</th>
               </tr>
-            ))}
-            {!loading && dispositivos.length === 0 && (
-              <tr><td colSpan="6" style={{textAlign:'center', padding:'2rem'}}>No hay dispositivos registrados.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading && dispositivos.length === 0 ? (
+                [...Array(4)].map((_, i) => (
+                  <tr key={`sk-${i}`}>
+                    {[...Array(7)].map((_, j) => (
+                      <td key={j}><div className="skeleton-cell" style={{width: `${60 + j*10}%`}}></div></td>
+                    ))}
+                  </tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan="7" className="empty-state">No se encontraron dispositivos</td></tr>
+              ) : (
+                filtered.map(disp => (
+                  <tr key={disp.id}>
+                    <td className="cell-mono">#{disp.id}</td>
+                    <td className="cell-highlight">{disp.identificador}</td>
+                    <td className="cell-mono">{disp.ip}</td>
+                    <td>{disp.laboratorio?.nombre || '—'}</td>
+                    <td>
+                      <span className={`status-badge ${disp.estado === 'conectado' ? 'online' : 'offline'}`}>
+                        <span className="status-dot"></span>
+                        {disp.estado === 'conectado' ? 'En línea' : 'Fuera de línea'}
+                      </span>
+                    </td>
+                    <td className="cell-muted">{disp.ultima_conexion ? new Date(disp.ultima_conexion).toLocaleString() : '—'}</td>
+                    <td>
+                      <div className="cell-actions">
+                        <button className="btn-secondary btn-sm" disabled={disp.estado !== 'conectado'}>Ping</button>
+                        <button className="btn-secondary btn-sm">Config</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

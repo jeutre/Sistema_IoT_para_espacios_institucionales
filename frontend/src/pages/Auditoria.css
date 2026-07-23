@@ -1,97 +1,37 @@
-.auditoria-container {
+.action-cell {
   display: flex;
-  flex-direction: column;
-  gap: 2rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.logs-wrapper {
-  overflow-x: auto;
-  padding: 1.5rem;
-}
-
-.logs-toolbar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-}
-
-.search-input {
-  flex-grow: 1;
-  max-width: 400px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  color: var(--text-main);
-}
-
-.filter-select {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  padding: 0.6rem 1rem;
-  color: var(--text-main);
-}
-
-.logs-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.logs-table th, 
-.logs-table td {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 0.95rem;
-}
-
-.logs-table th {
-  color: var(--text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-}
-
-.log-id {
-  color: var(--text-muted);
-  font-family: monospace;
-}
-
-.log-user {
-  font-weight: 600;
-  color: #a78bfa;
-}
-
-.log-ip {
-  font-family: monospace;
-  color: #60a5fa;
-}
-
-.log-badge {
+.action-badge {
   display: inline-block;
-  padding: 0.2rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 12px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
-.log-badge.info {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+.action-badge.info {
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.2);
 }
 
-.log-badge.danger {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+.action-badge.danger {
+  background: rgba(255, 0, 60, 0.1);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 0, 60, 0.2);
+  animation: dangerPulse 2s infinite;
 }
 
-@media (max-width: 768px) {
-  .logs-toolbar {
-    flex-direction: column;
-  }
-  .search-input {
-    max-width: 100%;
-  }
+@keyframes dangerPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(255,0,60,0); }
+  50% { box-shadow: 0 0 8px rgba(255,0,60,0.2); }
+}
+
+.action-badge.warning {
+  background: rgba(255, 221, 0, 0.1);
+  color: #ffdd00;
+  border: 1px solid rgba(255, 221, 0, 0.2);
 }

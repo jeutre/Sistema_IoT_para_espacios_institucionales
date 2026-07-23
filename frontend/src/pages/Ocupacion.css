@@ -1,99 +1,237 @@
-.ocupacion-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
 .ocupacion-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.ocupacion-card {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
-  transition: all 0.3s ease;
-  position: relative;
+}
+
+.ocupacion-stats {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+  padding: 0.35rem 0.8rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,240,255,0.1);
+  border-radius: 6px;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.chip-dot.green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
+.chip-dot.cyan { background: #00f0ff; box-shadow: 0 0 6px #00f0ff; }
+.chip-dot.yellow { background: #ffdd00; box-shadow: 0 0 6px #ffdd00; }
+
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #00ff66;
+  letter-spacing: 1px;
+  padding: 0.3rem 0.8rem;
+  background: rgba(0,255,102,0.08);
+  border: 1px solid rgba(0,255,102,0.2);
+  border-radius: 20px;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: #00ff66;
+  border-radius: 50%;
+  animation: liveBlink 1s step-end infinite;
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* Card */
+.ocupacion-card {
+  padding: 0;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-/* Bordes superiores de colores según estado */
-.ocupacion-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
+.ocupacion-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
 }
 
-.ocupacion-card.ocupado::before {
-  background: #f87171; /* Rojo suave */
-}
-.ocupacion-card.vacio::before {
-  background: #34d399; /* Verde esmeralda */
+.ocupacion-card.ocupado {
+  border-color: rgba(255, 0, 60, 0.2);
 }
 
-.card-header {
+.ocupacion-card.vacio {
+  border-color: rgba(0, 255, 102, 0.2);
+}
+
+.ocupacion-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.card-header h3 {
+.ocupacion-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ocupacion-lab {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ocupacion-device {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+  font-family: 'Consolas', monospace;
+}
+
+.ocupacion-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+}
+
+.ocupacion-indicator.ocupado {
+  background: rgba(255, 0, 60, 0.1);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 0, 60, 0.2);
+}
+
+.ocupacion-indicator.vacio {
+  background: rgba(0, 255, 102, 0.1);
+  color: #00ff66;
+  border: 1px solid rgba(0, 255, 102, 0.2);
+}
+
+.indicator-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.ocupacion-card-body {
+  padding: 1.5rem 1.2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ocupacion-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ocupacion-status {
   font-size: 1.2rem;
-  color: var(--text-main);
+  font-weight: 600;
   margin: 0;
 }
 
-.live-indicator {
+.ocupacion-status.ocupado { color: #ff6b6b; }
+.ocupacion-status.vacio { color: #00ff66; }
+
+.ocupacion-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  animation: pulse 2s infinite;
+  color: rgba(255,255,255,0.3);
 }
 
-.ocupado .live-indicator {
-  color: #f87171;
+.ocupacion-time {
+  font-family: 'Consolas', monospace;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #00f0ff;
+  text-shadow: 0 0 8px rgba(0,240,255,0.3);
 }
 
-.vacio .live-indicator {
-  color: #34d399;
+.ocupacion-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1.2rem;
+  background: rgba(0,0,0,0.2);
+  border-top: 1px solid rgba(255,255,255,0.03);
 }
 
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.5; }
-  100% { opacity: 1; }
+.ocupacion-signal {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
 }
 
-.card-body {
-  text-align: center;
-  padding: 1rem 0;
+.signal-bar {
+  width: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 1px;
 }
 
-.status-icon {
-  font-size: 3.5rem;
-  margin-bottom: 0.5rem;
+.signal-bar:nth-child(1) { height: 6px; }
+.signal-bar:nth-child(2) { height: 10px; }
+.signal-bar:nth-child(3) { height: 13px; }
+.signal-bar:nth-child(4) { height: 16px; }
+
+.signal-bar.active {
+  background: #00f0ff;
+  box-shadow: 0 0 4px #00f0ff;
 }
 
-.status-text {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
+.ocupacion-sensor-id {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.2);
+  font-family: 'Consolas', monospace;
 }
 
-.ocupado .status-text {
-  color: #fca5a5;
+.empty-card {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+  color: rgba(255,255,255,0.3);
 }
 
-.vacio .status-text {
-  color: #6ee7b7;
+.empty-card p {
+  font-size: 0.9rem;
 }
 
-.time-text {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+@media (max-width: 768px) {
+  .ocupacion-grid {
+    grid-template-columns: 1fr;
+  }
 }
