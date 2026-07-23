@@ -64,3 +64,109 @@
   90% { opacity: 1; }
   100% { transform: translateY(225px); opacity: 0; }
 }
+
+.hidden {
+  display: none !important;
+}
+
+.camera-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.6);
+  gap: 1rem;
+}
+
+.camera-placeholder p {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.success-message {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.verified-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.verified-overlay svg {
+  width: 80px;
+  height: 80px;
+  filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.6));
+  animation: pulse-check 0.5s ease-in-out;
+}
+
+.scanning-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(59, 130, 246, 0.15);
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanning-text {
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-top: 1rem;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+  animation: pulse-text 1s infinite;
+}
+
+@keyframes pulse-check {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse-text {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.btn-secondary {
+  background: transparent;
+  border: 2px solid var(--glass-border, rgba(255, 255, 255, 0.3));
+  color: var(--text-color, #e2e8f0);
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  margin-top: 0.75rem;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
