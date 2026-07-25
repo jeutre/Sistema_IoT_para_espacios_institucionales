@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'rest_framework_api_key',
     'corsheaders',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'apps.autenticacion',
     'apps.laboratorio',
@@ -105,6 +106,7 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':  timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'ROTATE_REFRESH_TOKENS':  True,
+    'BLACKLIST_AFTER_ROTATION': True,
     # Incluye datos del usuario en el token para que Flutter los muestre
     'UPDATE_LAST_LOGIN': True,
 }

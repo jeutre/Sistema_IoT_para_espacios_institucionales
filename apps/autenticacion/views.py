@@ -45,6 +45,15 @@ def logout_view(request):
         usuario=request.user, activa=True
     ).update(activa=False)
 
+    # HU-02: invalidar el refresh token en el servidor (blacklist)
+    refresh = request.data.get('refresh')
+    if refresh:
+        try:
+            from rest_framework_simplejwt.tokens import RefreshToken
+            RefreshToken(refresh).blacklist()
+        except Exception:
+            pass  # token ya expirado o invalido: el logout procede igual
+
     logout(request)
     return Response({'mensaje': 'Sesión cerrada correctamente.'}, status=status.HTTP_200_OK)
 
