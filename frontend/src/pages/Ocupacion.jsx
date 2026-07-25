@@ -1,34 +1,46 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useIotStore from '../store/iotStore';
 import './Ocupacion.css';
 
 const Ocupacion = () => {
-  const { ocupacion, fetchOcupacion, loading } = useIotStore();
+  const {
+    ocupacion, fetchOcupacion,
+    historialOcupacion, fetchHistorialOcupacion,
+    dispositivos, fetchDispositivos,
+    loading,
+  } = useIotStore();
+
+  const [filtros, setFiltros] = useState({ dispositivo: '', desde: '', hasta: '' });
+  const [buscado, setBuscado] = useState(false);
 
   useEffect(() => {
     fetchOcupacion();
+    fetchDispositivos();
     const interval = setInterval(() => fetchOcupacion(), 30000);
     return () => clearInterval(interval);
-  }, [fetchOcupacion]);
+  }, [fetchOcupacion, fetchDispositivos]);
+
+  const handleBuscarHistorial = (e) => {
+    e.preventDefault();
+    setBuscado(true);
+    fetchHistorialOcupacion(filtros);
+  };
+
+  const handleLimpiarFiltros = () => {
+    setFiltros({ dispositivo: '', desde: '', hasta: '' });
+    setBuscado(false);
+  };
+
+  const nombreDispositivo = (id) => {
+    const disp = dispositivos.find((d) => d.id === Number(id));
+    return disp ? disp.identificador : `#${id}`;
+  };
 
   return (
     <div className="page-container">
       <div className="toolbar-row">
         <div className="toolbar-left">
-          <div className="ocupacion-stats">
-            <div className="stat-chip">
-              <span className="chip-dot green"></span>
-              Ocupados: {ocupacion.filter(o => o.estado === 'ocupado').length}
-            </div>
-            <div className="stat-chip">
-              <span className="chip-dot cyan"></span>
-              Libres: {ocupacion.filter(o => o.estado === 'vacio').length}
-            </div>
-            <div className="stat-chip">
-              <span className="chip-dot yellow"></span>
-              Total: {ocupacion.length}
-            </div>
-          </div>
+          <h2 className="ocupacion-page-title">Monitoreo de Ocupación</h2>
         </div>
         <div className="toolbar-right">
           <span className="live-badge">
@@ -38,9 +50,24 @@ const Ocupacion = () => {
         </div>
       </div>
 
+      <div className="kpi-panel">
+        <div className="kpi-box ocupado">
+          <span className="kpi-number">{ocupacion.filter(o => o.estado === 'ocupado').length}</span>
+          <span className="kpi-label">Ocupados</span>
+        </div>
+        <div className="kpi-box libre">
+          <span className="kpi-number">{ocupacion.filter(o => o.estado === 'vacio').length}</span>
+          <span className="kpi-label">Disponibles</span>
+        </div>
+        <div className="kpi-box total">
+          <span className="kpi-number">{ocupacion.length}</span>
+          <span className="kpi-label">Total sensores</span>
+        </div>
+      </div>
+
       <div className="ocupacion-grid">
         {loading && ocupacion.length === 0 ? (
-          [...Array(6)].map((_, i) => (
+          [...Array(3)].map((_, i) => (
             <div key={`sk-${i}`} className="page-card ocupacion-card skeleton">
               <div className="skeleton-title" style={{width: '60%'}}></div>
               <div className="skeleton-value" style={{width: '40%', height: '60px', margin: '1rem auto'}}></div>
@@ -56,12 +83,12 @@ const Ocupacion = () => {
             <p>No hay datos de ocupación disponibles</p>
           </div>
         ) : (
-          ocupacion.map(evento => (
-            <div key={evento.id} className={`page-card ocupacion-card ${evento.estado}`}>
+          ocupacion.map((evento, idx) => (
+            <div key={idx} className={`page-card ocupacion-card ${evento.estado}`}>
               <div className="ocupacion-card-header">
                 <div className="ocupacion-card-info">
-                  <span className="ocupacion-lab">{evento.dispositivo?.identificador || 'Sensor'}</span>
-                  <span className="ocupacion-device">ESP32-{evento.dispositivo?.id || '?'}</span>
+                  <span className="ocupacion-lab">{evento.laboratorio || 'Laboratorio'}</span>
+                  <span className="ocupacion-device">{evento.dispositivo || 'Sensor'}</span>
                 </div>
                 <div className={`ocupacion-indicator ${evento.estado}`}>
                   <span className="indicator-pulse"></span>
@@ -88,7 +115,7 @@ const Ocupacion = () => {
                 <div className="ocupacion-meta">
                   <span>Última actualización</span>
                   <span className="ocupacion-time">
-                    {evento.registrado_en ? new Date(evento.registrado_en).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    {evento.ultima_vez ? new Date(evento.ultima_vez).toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </span>
                 </div>
               </div>
@@ -99,11 +126,71 @@ const Ocupacion = () => {
                   <span className="signal-bar active"></span>
                   <span className="signal-bar"></span>
                 </div>
-                <span className="ocupacion-sensor-id">ID: {evento.id}</span>
+                <span className="ocupacion-sensor-id">{evento.dispositivo || ''}</span>
               </div>
             </div>
           ))
         )}
+      </div>
+
+      <div className="glass-container historial-wrapper">
+        <h3 className="form-title">Historial de ocupación</h3>
+        <form onSubmit={handleBuscarHistorial} className="historial-filtros">
+          <select
+            value={filtros.dispositivo}
+            onChange={(e) => setFiltros({ ...filtros, dispositivo: e.target.value })}
+          >
+            <option value="">Todos los dispositivos</option>
+            {dispositivos.map((d) => (
+              <option key={d.id} value={d.id}>{d.identificador}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={filtros.desde}
+            onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })}
+          />
+          <input
+            type="date"
+            value={filtros.hasta}
+            onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })}
+          />
+          <button className="btn-primary" type="submit" disabled={loading}>
+            {loading ? 'Buscando...' : 'Buscar historial'}
+          </button>
+          <button type="button" className="btn-secondary" onClick={handleLimpiarFiltros}>
+            Limpiar
+          </button>
+        </form>
+
+        <table className="historial-table">
+          <thead>
+            <tr>
+              <th>Dispositivo</th>
+              <th>Estado</th>
+              <th>Fecha y hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            {historialOcupacion.map((evento) => (
+              <tr key={evento.id}>
+                <td>{nombreDispositivo(evento.dispositivo)}</td>
+                <td>
+                  <span className={`estado-badge ${evento.estado === 'ocupado' ? 'desconectado' : 'conectado'}`}>
+                    {evento.estado === 'ocupado' ? '● Ocupado' : '○ Vacío'}
+                  </span>
+                </td>
+                <td>{new Date(evento.registrado_en).toLocaleString()}</td>
+              </tr>
+            ))}
+            {buscado && !loading && historialOcupacion.length === 0 && (
+              <tr><td colSpan="3" style={{ textAlign: 'center', padding: '2rem' }}>No hay eventos para los filtros seleccionados.</td></tr>
+            )}
+            {!buscado && (
+              <tr><td colSpan="3" style={{ textAlign: 'center', padding: '2rem' }}>Selecciona un rango de fechas y presiona "Buscar historial".</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
