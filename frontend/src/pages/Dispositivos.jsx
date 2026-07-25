@@ -7,8 +7,11 @@ const Dispositivos = () => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
 
+  // HU-07: refresco automatico del estado cada 30 segundos
   useEffect(() => {
     fetchDispositivos();
+    const interval = setInterval(() => fetchDispositivos(), 30000);
+    return () => clearInterval(interval);
   }, [fetchDispositivos]);
 
   const filtered = dispositivos.filter(d => {
