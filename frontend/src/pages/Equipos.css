@@ -1,0 +1,9 @@
+/* Reusing common page styles */
+@import './Laboratorios.css';
+
+/* Equipos specific styles if any */
+.toolbar-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}

@@ -3,7 +3,7 @@ import useIotStore from '../store/iotStore';
 import './AlertasIoT.css';
 
 const AlertasIoT = () => {
-  const { alertas, fetchAlertas, loading } = useIotStore();
+  const { alertas, fetchAlertas, atenderAlerta, loading } = useIotStore();
   const [filter, setFilter] = useState('todas');
 
   useEffect(() => {
@@ -83,16 +83,16 @@ const AlertasIoT = () => {
                 <div className="alert-content">
                   <div className="alert-header">
                     <div className="alert-device">
-                      <span className="alert-device-name">{alerta.dispositivo}</span>
-                      <span className="alert-type">{alerta.tipo}</span>
+                      <span className="alert-device-name">{alerta.dispositivo_nombre}</span>
+                      <span className="alert-type">{alerta.tipo_display}</span>
                     </div>
-                    <span className="alert-time">{alerta.tiempo}</span>
+                    <span className="alert-time">{alerta.tiempo_relativo}</span>
                   </div>
-                  <p className="alert-message">{alerta.mensaje}</p>
+                  <p className="alert-message">{alerta.descripcion}</p>
                 </div>
                 <div className="alert-actions">
                   <span className={`alert-level-badge ${alerta.nivel}`}>{alerta.nivel}</span>
-                  <button className="btn-secondary btn-sm">Atender</button>
+                  <button className="btn-secondary btn-sm" onClick={() => atenderAlerta(alerta.id)}>Atender</button>
                 </div>
               </div>
             ))}

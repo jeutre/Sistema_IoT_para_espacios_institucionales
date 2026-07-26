@@ -1,29 +1,32 @@
 .simple-chart {
   padding: 1.5rem;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 20, 40, 0.5);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 240, 255, 0.15);
   transition: all 0.3s ease;
+  height: 100%;
 }
 
 .simple-chart:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+  border-color: rgba(0, 240, 255, 0.3);
 }
 
 .chart-title {
   margin: 0 0 1.5rem 0;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #fff;
   text-align: center;
 }
 
 .chart-container {
   position: relative;
   width: 100%;
+  padding-top: 10px;
 }
 
 /* Bar chart styles */
@@ -33,7 +36,7 @@
   justify-content: space-around;
   height: 100%;
   padding: 0 0.5rem;
-  gap: 8px;
+  gap: 12px;
 }
 
 .chart-bar-container {
@@ -43,47 +46,51 @@
   flex: 1;
   height: 100%;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 .chart-bar {
-  width: 80%;
+  width: 100%;
+  max-width: 40px;
   min-height: 4px;
-  background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #00f0ff, #0077ff);
+  border-radius: 6px 6px 0 0;
   position: relative;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 8px;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
 }
 
 .chart-bar:hover {
   transform: scaleY(1.05);
-  box-shadow: 0 4px 12px rgba(var(--accent-primary-rgb), 0.3);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+  filter: brightness(1.2);
 }
 
 .chart-bar-value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 119, 255, 0.8);
   padding: 2px 6px;
   border-radius: 4px;
   position: absolute;
-  top: -25px;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
   white-space: nowrap;
+  border: 1px solid rgba(0, 240, 255, 0.5);
 }
 
 .chart-bar-label {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
   text-align: center;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  margin-top: 5px;
 }
 
 /* Line chart styles */
@@ -91,39 +98,50 @@
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-line-svg {
   width: 100%;
-  height: calc(100% - 30px);
+  flex: 1;
+  overflow: visible;
 }
 
 .chart-line-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 10px;
-  padding: 0 0.5rem;
+  margin-top: 15px;
+  padding: 0;
 }
 
 .chart-line-label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
   text-align: center;
   flex: 1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Dark mode adjustments */
-[data-theme="dark"] .simple-chart {
-  background: rgba(30, 30, 40, 0.5);
-  border-color: rgba(255, 255, 255, 0.1);
+/* Light theme adjustments */
+[data-theme="light"] .simple-chart {
+  background: #ffffff;
+  border-color: #e0e0e0;
 }
 
-[data-theme="dark"] .chart-bar {
-  background: linear-gradient(180deg, var(--accent-primary-dark), var(--accent-secondary-dark));
+[data-theme="light"] .chart-title {
+  color: #333;
+}
+
+[data-theme="light"] .chart-bar-label,
+[data-theme="light"] .chart-line-label {
+  color: #666;
+}
+
+[data-theme="light"] .chart-bar-value {
+  color: #fff;
+  background: #0055ff;
+  border-color: #0055ff;
 }
 
 /* Responsive */
@@ -133,17 +151,16 @@
   }
   
   .chart-title {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+    font-size: 1rem;
   }
   
   .chart-bar-value {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     padding: 1px 4px;
-    top: -20px;
+    top: -22px;
   }
   
   .chart-bar-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 }

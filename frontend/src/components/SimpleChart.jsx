@@ -39,8 +39,10 @@ const SimpleChart = ({ title, data, type = 'bar', height = 200 }) => {
           <polyline
             points={points}
             fill="none"
-            stroke="var(--accent-primary)"
-            strokeWidth="2"
+            stroke="#00f0ff"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
         <div className="chart-line-labels">

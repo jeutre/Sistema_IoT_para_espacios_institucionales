@@ -257,6 +257,31 @@ body:has(.portal-wrapper) .app-container {
   gap: 1rem;
 }
 
+.topbar-collapse-btn {
+  background: transparent;
+  border: none;
+  color: #00f0ff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.topbar-collapse-btn:hover {
+  background: rgba(0, 240, 255, 0.1);
+}
+
+[data-theme="light"] .topbar-collapse-btn {
+  color: #333;
+}
+
+[data-theme="light"] .topbar-collapse-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .topbar-title {
   font-size: 1.3rem;
   font-weight: 600;
@@ -513,4 +538,104 @@ body:has(.portal-wrapper) .app-container {
   .portal-page {
     padding: 1rem;
   }
+}
+
+/* ── Sidebar Collapse ────────────────────────────────────────────────── */
+.portal-wrapper.collapsed .portal-sidebar {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  border-right: none;
+}
+
+/* ── Light Theme Overrides ───────────────────────────────────────────── */
+[data-theme="light"] .portal-wrapper,
+[data-theme="light"] .portal-content {
+  background: #f0f4f8;
+}
+
+[data-theme="light"] .portal-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+}
+
+[data-theme="light"] .sidebar-brand-text {
+  background: linear-gradient(135deg, #0055ff, #00aaff);
+  -webkit-background-clip: text;
+}
+
+[data-theme="light"] .sidebar-user-name {
+  color: #333;
+}
+
+[data-theme="light"] .sidebar-user-role {
+  color: #666;
+}
+
+[data-theme="light"] .nav-item {
+  color: #555;
+}
+
+[data-theme="light"] .nav-item:hover {
+  background: #f5f5f5;
+  color: #111;
+}
+
+[data-theme="light"] .nav-item.active {
+  background: #e6f7ff;
+  color: #0050b3;
+  box-shadow: inset 3px 0 0 #0050b3;
+}
+
+[data-theme="light"] .portal-topbar {
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid #e0e0e0;
+}
+
+[data-theme="light"] .topbar-title {
+  color: #333;
+}
+
+[data-theme="light"] .topbar-status {
+  color: #666;
+}
+
+[data-theme="light"] .topbar-time {
+  color: #0050b3;
+}
+
+[data-theme="light"] .page-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  color: #333;
+}
+
+[data-theme="light"] .data-table th {
+  color: #666;
+  border-bottom: 1px solid #ddd;
+}
+
+[data-theme="light"] .data-table td {
+  color: #333;
+  border-bottom: 1px solid #eee;
+}
+
+[data-theme="light"] .data-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+[data-theme="light"] .btn-secondary {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  color: #333;
+}
+
+[data-theme="light"] .btn-secondary:hover {
+  background: #e0e0e0;
+  color: #000;
+}
+
+[data-theme="light"] .nav-section-title {
+  color: #999;
 }

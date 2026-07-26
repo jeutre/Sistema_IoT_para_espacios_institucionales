@@ -799,6 +799,114 @@
   animation: shimmer 1.5s infinite;
 }
 
+/* ── Light Theme Overrides ───────────────────────────────────────────── */
+[data-theme="light"] .dashboard-header,
+[data-theme="light"] .glass-container {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  color: #333;
+}
+
+[data-theme="light"] .dashboard-header h1 {
+  background: linear-gradient(135deg, #0055ff, #00aaff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .subtitle {
+  color: #666;
+}
+
+[data-theme="light"] .time-digital {
+  color: #0050b3;
+  text-shadow: none;
+}
+
+[data-theme="light"] .date-text {
+  color: #666;
+}
+
+[data-theme="light"] .stat-chip {
+  background: #f5f5f5;
+  color: #555;
+  border: 1px solid #eee;
+}
+
+[data-theme="light"] .metric-content h3 {
+  color: #666;
+}
+
+[data-theme="light"] .metric-label {
+  color: #888;
+}
+
+[data-theme="light"] .widget-value {
+  text-shadow: none;
+}
+
+[data-theme="light"] .panel-header {
+  border-bottom-color: #eee;
+}
+
+[data-theme="light"] .panel-header h3 {
+  color: #333;
+}
+
+[data-theme="light"] .network-topology {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+}
+
+[data-theme="light"] .net-stat {
+  background: #f9f9f9;
+  border-color: #eee;
+}
+
+[data-theme="light"] .net-stat-label {
+  color: #777;
+}
+
+[data-theme="light"] .alerta-item {
+  background: #f9f9f9;
+}
+
+[data-theme="light"] .alerta-item:hover {
+  background: #f0f0f0;
+}
+
+[data-theme="light"] .alerta-title {
+  color: #333;
+}
+
+[data-theme="light"] .alerta-time {
+  color: #777;
+}
+
+[data-theme="light"] .alerts-empty {
+  color: #777;
+}
+
+[data-theme="light"] .dashboard-footer {
+  background: #ffffff;
+  border-color: #e0e0e0;
+  color: #666;
+}
+
+[data-theme="light"] .metric-bar {
+  background: #e0e0e0;
+}
+
+[data-theme="light"] .network-svg text {
+  fill: #333 !important;
+}
+
+[data-theme="light"] .dashboard-bg-grid {
+  background-image: 
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }

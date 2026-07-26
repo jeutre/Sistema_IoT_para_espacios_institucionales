@@ -7,16 +7,10 @@ const ThemeToggle = () => {
   const currentTheme = getCurrentTheme();
 
   const getThemeIcon = () => {
-    if (theme === 'system') {
-      return '🖥️';
-    }
     return currentTheme === 'dark' ? '🌙' : '☀️';
   };
 
   const getThemeLabel = () => {
-    if (theme === 'system') {
-      return 'Sistema';
-    }
     return currentTheme === 'dark' ? 'Oscuro' : 'Claro';
   };
 

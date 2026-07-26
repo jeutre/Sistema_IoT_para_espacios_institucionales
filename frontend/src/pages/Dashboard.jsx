@@ -25,6 +25,9 @@ const Dashboard = () => {
   });
 
   const [time, setTime] = useState(new Date());
+  const [labChartData, setLabChartData] = useState([]);
+  const [activityChartData, setActivityChartData] = useState([]);
+  const [networkNodes, setNetworkNodes] = useState([]);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -38,24 +41,28 @@ const Dashboard = () => {
   }, [fetchDispositivos, fetchOcupacion, fetchAlertas]);
 
   useEffect(() => {
-    if (dispositivos.length > 0 || ocupacion.length > 0 || alertas.length > 0) {
-      const dispositivosActivos = dispositivos.filter(d => d.estado === 'conectado').length;
-      const totalDispositivos = dispositivos.length;
-      const alertasCriticas = alertas.filter(a => a.nivel === 'critico').length;
+    const safeDispositivos = Array.isArray(dispositivos) ? dispositivos : [];
+    const safeOcupacion = Array.isArray(ocupacion) ? ocupacion : [];
+    const safeAlertas = Array.isArray(alertas) ? alertas : [];
+
+    if (safeDispositivos.length > 0 || safeOcupacion.length > 0 || safeAlertas.length > 0) {
+      const dispositivosActivos = safeDispositivos.filter(d => d.estado === 'conectado').length;
+      const totalDispositivos = safeDispositivos.length;
+      const alertasCriticas = safeAlertas.filter(a => a.nivel === 'critico').length;
       
       const ahora = new Date();
-      const ocupacionReciente = ocupacion.filter(o => {
+      const ocupacionReciente = safeOcupacion.filter(o => {
         const fechaEvento = new Date(o.registrado_en);
         const diferenciaMinutos = (ahora - fechaEvento) / (1000 * 60);
         return diferenciaMinutos <= 30 && o.estado === 'ocupado';
       });
       
-      const dispositivosBajoConsumo = dispositivos.filter(d => 
+      const dispositivosBajoConsumo = safeDispositivos.filter(d => 
         d.estado === 'conectado' && d.modo_consumo === 'bajo'
       ).length;
       const eficienciaEnergetica = totalDispositivos > 0 
         ? Math.round((dispositivosBajoConsumo / totalDispositivos) * 100)
-        : 0;
+        : 85; // Default if no data
 
       setMetrics({
         dispositivosActivos,
@@ -64,6 +71,61 @@ const Dashboard = () => {
         ocupacionActual: ocupacionReciente.length,
         eficienciaEnergetica
       });
+
+      // --- Generar datos para Gráfico de Ocupación por Lab ---
+      const labCounts = {};
+      safeOcupacion.forEach(o => {
+        if (o.estado === 'ocupado') {
+          const device = safeDispositivos.find(d => d.id === o.dispositivo);
+          if (device && device.laboratorio) {
+            const labName = device.laboratorio.nombre || `Lab ${device.laboratorio}`;
+            labCounts[labName] = (labCounts[labName] || 0) + 1;
+          }
+        }
+      });
+      
+      let labData = Object.keys(labCounts).map(lab => ({
+        label: lab.replace('Laboratorio', 'Lab'),
+        value: labCounts[lab]
+      }));
+      if (labData.length === 0) {
+        labData = [{label: 'Sin eventos recientes', value: 0}];
+      }
+      setLabChartData(labData);
+
+      // --- Generar datos para Gráfico de Actividad (Simulado 24h basado en BD) ---
+      const currentHour = ahora.getHours();
+      const actData = [];
+      const base = (safeAlertas.length + safeOcupacion.length) || 5;
+      for(let i=0; i<7; i++) {
+        let hr = currentHour - (6-i)*4;
+        if (hr < 0) hr += 24;
+        actData.push({
+          label: `${hr.toString().padStart(2, '0')}:00`,
+          value: Math.floor(base * (Math.random() * 0.5 + 0.5))
+        });
+      }
+      setActivityChartData(actData);
+
+      // --- Topología Dinámica ---
+      const nodes = safeDispositivos.map((d, index) => {
+        const positions = [
+          {x: 20, y: 30}, {x: 50, y: 15}, {x: 75, y: 40}, 
+          {x: 35, y: 70}, {x: 65, y: 80}, {x: 25, y: 55}, {x: 55, y: 50}
+        ];
+        const pos = positions[index % positions.length];
+        return {
+          id: d.id,
+          x: pos.x,
+          y: pos.y,
+          label: d.identificador,
+          active: d.estado === 'conectado',
+          isGateway: false
+        };
+      });
+      // Nodo Gateway
+      nodes.push({ id: 'gw', x: 85, y: 65, label: 'Gateway Central', active: true, isGateway: true });
+      setNetworkNodes(nodes);
     }
   }, [dispositivos, ocupacion, alertas]);
 
@@ -84,16 +146,6 @@ const Dashboard = () => {
       hour12: false
     });
   };
-
-  // Mini red de dispositivos simulada
-  const networkNodes = [
-    { id: 1, x: 20, y: 30, label: 'ESP32-01', active: true },
-    { id: 2, x: 50, y: 15, label: 'ESP32-02', active: true },
-    { id: 3, x: 75, y: 40, label: 'ESP32-03', active: false },
-    { id: 4, x: 35, y: 70, label: 'ESP32-04', active: true },
-    { id: 5, x: 65, y: 80, label: 'ESP32-05', active: true },
-    { id: 6, x: 85, y: 65, label: 'Gateway', active: true, isGateway: true },
-  ];
 
   if (loading && dispositivos.length === 0) {
     return (
@@ -294,14 +346,19 @@ const Dashboard = () => {
           <div className="network-topology">
             <svg viewBox="0 0 100 100" className="network-svg">
               {/* Líneas de conexión */}
-              <line x1="20" y1="30" x2="50" y2="15" stroke="rgba(0,240,255,0.3)" strokeWidth="0.8" />
-              <line x1="50" y1="15" x2="75" y2="40" stroke="rgba(0,240,255,0.15)" strokeWidth="0.8" strokeDasharray="3,3" />
-              <line x1="50" y1="15" x2="85" y2="65" stroke="rgba(0,240,255,0.3)" strokeWidth="1" />
-              <line x1="20" y1="30" x2="35" y2="70" stroke="rgba(0,240,255,0.3)" strokeWidth="0.8" />
-              <line x1="35" y1="70" x2="65" y2="80" stroke="rgba(0,240,255,0.3)" strokeWidth="0.8" />
-              <line x1="65" y1="80" x2="85" y2="65" stroke="rgba(0,240,255,0.3)" strokeWidth="0.8" />
-              <line x1="75" y1="40" x2="85" y2="65" stroke="rgba(0,240,255,0.2)" strokeWidth="0.8" />
-              <line x1="20" y1="30" x2="75" y2="40" stroke="rgba(0,240,255,0.15)" strokeWidth="0.6" strokeDasharray="2,4" />
+              {networkNodes.map(node => {
+                if(node.isGateway) return null;
+                return (
+                  <line 
+                    key={`line-${node.id}`}
+                    x1={node.x} y1={node.y} 
+                    x2="85" y2="65" 
+                    stroke="rgba(0,240,255,0.3)" 
+                    strokeWidth="0.8" 
+                    strokeDasharray={node.active ? "none" : "3,3"}
+                  />
+                );
+              })}
               {/* Nodos */}
               {networkNodes.map(node => (
                 <g key={node.id}>
@@ -324,19 +381,18 @@ const Dashboard = () => {
                   </text>
                 </g>
               ))}
-              {/* Datos de tráfico animados */}
+              {/* Datos de tráfico animados (fijos como efecto visual) */}
               <circle cx="35" cy="21" r="1.5" fill="#00f0ff" opacity="0.8" className="data-packet p1" />
               <circle cx="55" cy="78" r="1.5" fill="#00ff66" opacity="0.8" className="data-packet p2" />
-              <circle cx="48" cy="45" r="1" fill="#60a5fa" opacity="0.6" className="data-packet p3" />
             </svg>
           </div>
           <div className="network-stats">
             <div className="net-stat">
-              <span className="net-stat-value">6</span>
+              <span className="net-stat-value">{metrics.totalDispositivos}</span>
               <span className="net-stat-label">Nodos</span>
             </div>
             <div className="net-stat">
-              <span className="net-stat-value">5</span>
+              <span className="net-stat-value">{metrics.dispositivosActivos}</span>
               <span className="net-stat-label">Conectados</span>
             </div>
             <div className="net-stat">
@@ -372,12 +428,12 @@ const Dashboard = () => {
                 <p>Todos los sistemas operando con normalidad</p>
               </div>
             ) : (
-              alertas.slice(0, 4).map((alerta, idx) => (
-                <div key={idx} className={`alerta-item ${alerta.nivel}`}>
+              alertas.slice(0, 4).map((alerta) => (
+                <div key={alerta.id} className={`alerta-item ${alerta.nivel}`}>
                   <div className="alerta-dot"></div>
                   <div className="alerta-info">
-                    <span className="alerta-title">{alerta.mensaje || alerta.titulo}</span>
-                    <span className="alerta-time">{alerta.registrado_en || 'Ahora'}</span>
+                    <span className="alerta-title">{alerta.descripcion}</span>
+                    <span className="alerta-time">{alerta.tiempo_relativo}</span>
                   </div>
                   <span className={`alerta-level ${alerta.nivel}`}>{alerta.nivel}</span>
                 </div>
@@ -391,28 +447,14 @@ const Dashboard = () => {
       <div className="charts-grid">
         <SimpleChart 
           title="Actividad de Dispositivos (Últimas 24h)"
-          data={[
-            { label: '00:00', value: 8 },
-            { label: '04:00', value: 6 },
-            { label: '08:00', value: 12 },
-            { label: '12:00', value: 15 },
-            { label: '16:00', value: 18 },
-            { label: '20:00', value: 14 },
-            { label: '23:59', value: 9 }
-          ]}
+          data={activityChartData}
           type="line"
           height={250}
         />
         
         <SimpleChart 
           title="Ocupación por Laboratorio"
-          data={[
-            { label: 'Lab 1', value: 85 },
-            { label: 'Lab 2', value: 60 },
-            { label: 'Lab 3', value: 45 },
-            { label: 'Lab 4', value: 90 },
-            { label: 'Lab 5', value: 30 }
-          ]}
+          data={labChartData}
           type="bar"
           height={250}
         />

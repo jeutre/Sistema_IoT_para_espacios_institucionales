@@ -13,7 +13,9 @@ const PortalLayout = () => {
   const navItems = [
     { to: '/dashboard', icon: 'grid', label: 'Dashboard', end: true },
     { to: '/dashboard/perfil', icon: 'user', label: 'Perfil' },
+    { to: '/dashboard/laboratorios', icon: 'box', label: 'Laboratorios' },
     { to: '/dashboard/dispositivos', icon: 'cpu', label: 'ESP32' },
+    { to: '/dashboard/equipos', icon: 'monitor', label: 'Equipos IPv4' },
     { to: '/dashboard/ocupacion', icon: 'users', label: 'Ocupación' },
     { to: '/dashboard/alertas', icon: 'bell', label: 'Alertas IoT' },
   ];
@@ -27,7 +29,9 @@ const PortalLayout = () => {
     const icons = {
       grid: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
       user: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+      box: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>,
       cpu: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>,
+      monitor: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
       users: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
       bell: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
       chart: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
@@ -41,7 +45,9 @@ const PortalLayout = () => {
   const pageTitle = {
     '/dashboard': 'Dashboard Principal',
     '/dashboard/perfil': 'Mi Perfil',
+    '/dashboard/laboratorios': 'Gestión de Laboratorios',
     '/dashboard/dispositivos': 'Dispositivos ESP32',
+    '/dashboard/equipos': 'Control de Equipos IPv4',
     '/dashboard/ocupacion': 'Monitoreo Ocupación',
     '/dashboard/alertas': 'Alertas IoT',
     '/dashboard/reportes': 'Reportes',
@@ -65,9 +71,6 @@ const PortalLayout = () => {
             </svg>
             <span className="sidebar-brand-text">IoT Center</span>
           </div>
-          <button className="sidebar-collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
-            {getIcon('burger')}
-          </button>
         </div>
 
         <div className="sidebar-user">
@@ -125,6 +128,9 @@ const PortalLayout = () => {
       <main className="portal-content">
         <div className="portal-topbar">
           <div className="topbar-left">
+            <button className="topbar-collapse-btn" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
             <h2 className="topbar-title">{currentTitle}</h2>
           </div>
           <div className="topbar-right">

@@ -7,12 +7,13 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import BiometricPage from './pages/BiometricPage';
 import PortalLayout from './pages/PortalLayout';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import Laboratorios from './pages/Laboratorios';
 import Dispositivos from './pages/Dispositivos';
 import Ocupacion from './pages/Ocupacion';
+import Equipos from './pages/Equipos';
 import AlertasIoT from './pages/AlertasIoT';
 import Reportes from './pages/Reportes';
 import Auditoria from './pages/Auditoria';
@@ -67,7 +68,6 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/biometria" element={<BiometricPage />} />
 
           {/* Zona Privada (Centro de Comando IoT) */}
           <Route 
@@ -81,8 +81,10 @@ function App() {
             {/* Sub-rutas del portal IoT */}
             <Route index element={<Dashboard />} />
             <Route path="perfil" element={<Profile />} />
+            <Route path="laboratorios" element={<Laboratorios />} />
             <Route path="dispositivos" element={<Dispositivos />} />
             <Route path="ocupacion" element={<Ocupacion />} />
+            <Route path="equipos" element={<Equipos />} />
             <Route path="alertas" element={<AlertasIoT />} />
             
             <Route path="reportes" element={<Reportes />} />

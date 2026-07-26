@@ -87,7 +87,7 @@ const LoginPage = () => {
     
     const success = await loginAction(formData.username, formData.password);
     if (success) {
-      navigate('/biometria');
+      navigate('/dashboard');
     }
   };
 
