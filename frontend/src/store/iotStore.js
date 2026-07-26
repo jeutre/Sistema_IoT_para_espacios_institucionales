@@ -4,6 +4,7 @@ import api from '../axiosConfig';
 const useIotStore = create((set) => ({
   dispositivos: [],
   ocupacion: [],
+  historialOcupacion: [],
   alertas: [],
   loading: false,
   error: null,
@@ -12,23 +13,21 @@ const useIotStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.get('/dispositivos/esp32/');
+<<<<<<< HEAD
       // Manejar respuesta paginada de Django REST Framework (response.data.results)
       let data = response.data.results !== undefined ? response.data.results : response.data;
       if (!Array.isArray(data)) data = [];
+=======
+      const data = response.data.results !== undefined ? response.data.results : response.data;
+>>>>>>> 279187066aac9c54dcb78600412b21d320b04528
       set({ dispositivos: data, loading: false });
     } catch (err) {
-      console.warn("No se pudo conectar a /api/v1/dispositivos/esp32/. Cargando datos de prueba.");
-      set({
-        dispositivos: [
-          { id: 1, identificador: 'ESP32-A1', ip: '192.168.1.50', estado: 'conectado', laboratorio: { nombre: 'Lab de Redes' } },
-          { id: 2, identificador: 'ESP32-A2', ip: '192.168.1.51', estado: 'desconectado', laboratorio: { nombre: 'Lab de Redes' } },
-          { id: 3, identificador: 'ESP32-B1', ip: '192.168.1.52', estado: 'conectado', laboratorio: { nombre: 'Taller de Electrónica' } },
-        ],
-        loading: false
-      });
+      console.error('Error al cargar dispositivos:', err);
+      set({ dispositivos: [], loading: false, error: 'No se pudieron cargar los dispositivos.' });
     }
   },
 
+<<<<<<< HEAD
   ocupacion: [],
   ocupacionTiempoReal: [],
   horasPico: null,
@@ -61,6 +60,34 @@ const useIotStore = create((set) => ({
           { dispositivo: 'ESP32-A1', laboratorio: 'Lab Redes', estado: 'ocupado', ultima_vez: new Date().toISOString() }
         ]
       });
+=======
+  // HU-10: estado de ocupacion en tiempo real, un registro por dispositivo
+  fetchOcupacion: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await api.get('/ocupacion/tiempo-real/');
+      set({ ocupacion: response.data, loading: false });
+    } catch (err) {
+      console.error('Error al cargar ocupacion:', err);
+      set({ ocupacion: [], loading: false, error: 'No se pudo cargar la ocupacion.' });
+    }
+  },
+
+  // HU-11: historial de ocupacion con filtros (dispositivo, desde, hasta)
+  fetchHistorialOcupacion: async (filtros = {}) => {
+    set({ loading: true, error: null });
+    try {
+      const params = new URLSearchParams();
+      if (filtros.dispositivo) params.append('dispositivo', filtros.dispositivo);
+      if (filtros.desde) params.append('desde', filtros.desde);
+      if (filtros.hasta) params.append('hasta', filtros.hasta);
+      const response = await api.get(`/ocupacion/?${params.toString()}`);
+      const data = response.data.results !== undefined ? response.data.results : response.data;
+      set({ historialOcupacion: data, loading: false });
+    } catch (err) {
+      console.error('Error al cargar historial:', err);
+      set({ historialOcupacion: [], loading: false, error: 'No se pudo cargar el historial.' });
+>>>>>>> 279187066aac9c54dcb78600412b21d320b04528
     }
   },
 
@@ -137,6 +164,7 @@ const useIotStore = create((set) => ({
       if (!Array.isArray(data)) data = [];
       set({ alertas: data, loading: false });
     } catch (err) {
+<<<<<<< HEAD
       console.warn("No se pudo conectar a /alertas/.");
       set({ alertas: [], loading: false, error: err.message });
     }
@@ -170,6 +198,10 @@ const useIotStore = create((set) => ({
         ],
         loading: false
       });
+=======
+      console.error('Error al cargar alertas:', err);
+      set({ alertas: [], loading: false, error: 'No se pudieron cargar las alertas.' });
+>>>>>>> 279187066aac9c54dcb78600412b21d320b04528
     }
   },
   

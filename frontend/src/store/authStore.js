@@ -53,14 +53,19 @@ const useAuthStore = create((set, get) => ({
       return false;
     }
   },
-
-  
-  logout: () => {
+logout: async () => {
+    const refresh = localStorage.getItem('refresh_token');
+    if (refresh) {
+      try {
+        await api.post('/auth/logout/', { refresh });
+      } catch (e) {
+        // si el servidor no responde, igual cerramos sesion localmente
+      }
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     set({ user: null, isAuthenticated: false, error: null });
   },
-  
   checkAuth: async () => {
     const token = localStorage.getItem('access_token');
     if (!token) {

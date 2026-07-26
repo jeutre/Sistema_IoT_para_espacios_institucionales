@@ -11,6 +11,7 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from django.conf import settings
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ def iniciar_scheduler():
         name='Evaluación de reglas de automatización',
         replace_existing=True,
         # Ejecutar inmediatamente al arrancar Django, no esperar el primer intervalo
-        next_run_time=None
+        next_run_time=datetime.now(_scheduler.timezone)
     )
 
     _scheduler.start()
