@@ -14,7 +14,7 @@ from apps.dispositivos.models import Dispositivo
 class OcupacionViewSet(viewsets.ModelViewSet):
     serializer_class   = EventoOcupacionSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names  = ['get', 'head', 'options']
+    http_method_names  = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
         """

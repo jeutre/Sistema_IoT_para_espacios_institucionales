@@ -1,4 +1,4 @@
-..ocupacion-grid {
+.ocupacion-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 400px));
   gap: 1.5rem;

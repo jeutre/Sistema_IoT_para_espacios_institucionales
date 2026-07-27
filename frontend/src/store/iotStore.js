@@ -6,6 +6,11 @@ const useIotStore = create((set) => ({
   ocupacion: [],
   historialOcupacion: [],
   alertas: [],
+  laboratorios: [],
+  equipos: [],
+  equiposActivos: 0,
+  equiposInactivos: 0,
+  horasPico: null,
   loading: false,
   error: null,
 
@@ -13,67 +18,30 @@ const useIotStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.get('/dispositivos/esp32/');
-<<<<<<< HEAD
-      // Manejar respuesta paginada de Django REST Framework (response.data.results)
-      let data = response.data.results !== undefined ? response.data.results : response.data;
-      if (!Array.isArray(data)) data = [];
-=======
-      const data = response.data.results !== undefined ? response.data.results : response.data;
->>>>>>> 279187066aac9c54dcb78600412b21d320b04528
-      set({ dispositivos: data, loading: false });
+      const data = response.data?.results ?? response.data;
+      set({
+        dispositivos: Array.isArray(data) ? data : [],
+        loading: false,
+        error: null,
+      });
     } catch (err) {
       console.error('Error al cargar dispositivos:', err);
       set({ dispositivos: [], loading: false, error: 'No se pudieron cargar los dispositivos.' });
     }
   },
 
-<<<<<<< HEAD
-  ocupacion: [],
-  ocupacionTiempoReal: [],
-  horasPico: null,
-  
-  fetchOcupacion: async (desde, hasta) => {
-    set({ loading: true, error: null });
-    try {
-      let url = '/ocupacion/';
-      if (desde && hasta) {
-        url += `?desde=${desde}&hasta=${hasta}`;
-      }
-      const response = await api.get(url);
-      let data = response.data.results !== undefined ? response.data.results : response.data;
-      if (!Array.isArray(data)) data = [];
-      set({ ocupacion: data, loading: false });
-    } catch (err) {
-      console.warn("Cargando datos de prueba para ocupación historial.");
-      set({ loading: false });
-    }
-  },
-
-  fetchOcupacionTiempoReal: async () => {
-    try {
-      const response = await api.get('/ocupacion/tiempo-real/');
-      set({ ocupacionTiempoReal: response.data });
-    } catch (err) {
-      console.warn("Cargando datos de prueba para ocupación tiempo real.");
-      set({
-        ocupacionTiempoReal: [
-          { dispositivo: 'ESP32-A1', laboratorio: 'Lab Redes', estado: 'ocupado', ultima_vez: new Date().toISOString() }
-        ]
-      });
-=======
-  // HU-10: estado de ocupacion en tiempo real, un registro por dispositivo
   fetchOcupacion: async () => {
     set({ loading: true, error: null });
     try {
       const response = await api.get('/ocupacion/tiempo-real/');
-      set({ ocupacion: response.data, loading: false });
+      const data = Array.isArray(response.data) ? response.data : [];
+      set({ ocupacion: data, loading: false, error: null });
     } catch (err) {
       console.error('Error al cargar ocupacion:', err);
       set({ ocupacion: [], loading: false, error: 'No se pudo cargar la ocupacion.' });
     }
   },
 
-  // HU-11: historial de ocupacion con filtros (dispositivo, desde, hasta)
   fetchHistorialOcupacion: async (filtros = {}) => {
     set({ loading: true, error: null });
     try {
@@ -82,46 +50,49 @@ const useIotStore = create((set) => ({
       if (filtros.desde) params.append('desde', filtros.desde);
       if (filtros.hasta) params.append('hasta', filtros.hasta);
       const response = await api.get(`/ocupacion/?${params.toString()}`);
-      const data = response.data.results !== undefined ? response.data.results : response.data;
-      set({ historialOcupacion: data, loading: false });
+      const data = response.data?.results ?? response.data;
+      set({
+        historialOcupacion: Array.isArray(data) ? data : [],
+        loading: false,
+        error: null,
+      });
     } catch (err) {
       console.error('Error al cargar historial:', err);
       set({ historialOcupacion: [], loading: false, error: 'No se pudo cargar el historial.' });
->>>>>>> 279187066aac9c54dcb78600412b21d320b04528
     }
   },
 
   fetchHorasPico: async (desde, hasta) => {
+    set({ error: null });
     try {
       let url = '/ocupacion/horas-pico/';
       if (desde && hasta) {
         url += `?desde=${desde}&hasta=${hasta}`;
       }
       const response = await api.get(url);
-      set({ horasPico: response.data });
+      set({ horasPico: response.data ?? null });
     } catch (err) {
-      console.warn("Cargando datos de prueba para horas pico.");
-      set({ horasPico: { detalle_por_hora: [{ hora: 10, total_eventos_ocupado: 5 }, { hora: 14, total_eventos_ocupado: 8 }] } });
+      console.error('Error al cargar horas pico:', err);
+      set({ horasPico: null, error: 'No se pudieron cargar las horas pico.' });
     }
   },
 
-  equipos: [],
-  equiposActivos: 0,
-  equiposInactivos: 0,
-
   fetchEquipos: async () => {
+    set({ error: null });
     try {
       const response = await api.get('/equipos/');
-      set({ equipos: response.data.results || response.data });
+      const data = response.data?.results ?? response.data;
+      set({ equipos: Array.isArray(data) ? data : [] });
     } catch (err) {
-      console.warn("Error fetching equipos.");
+      console.error('Error al cargar equipos:', err);
+      set({ equipos: [], error: 'No se pudieron cargar los equipos.' });
     }
   },
 
   createEquipo: async (equipo) => {
     try {
       const response = await api.post('/equipos/', equipo);
-      set(state => ({ equipos: [...state.equipos, response.data] }));
+      set((state) => ({ equipos: [...state.equipos, response.data] }));
     } catch (err) {
       console.error(err);
       throw err;
@@ -131,8 +102,8 @@ const useIotStore = create((set) => ({
   updateEquipo: async (id, data) => {
     try {
       const response = await api.patch(`/equipos/${id}/`, data);
-      set(state => ({
-        equipos: state.equipos.map(eq => eq.id === id ? response.data : eq)
+      set((state) => ({
+        equipos: state.equipos.map((eq) => (eq.id === id ? response.data : eq)),
       }));
     } catch (err) {
       console.error(err);
@@ -143,75 +114,72 @@ const useIotStore = create((set) => ({
   pingTodos: async () => {
     try {
       const response = await api.get('/equipos/ping-todos/');
-      set({ 
+      set({
         equiposActivos: response.data.total_activos,
-        equiposInactivos: response.data.total_inactivos
+        equiposInactivos: response.data.total_inactivos,
       });
-      // Refresh list to get updated states
       const listResp = await api.get('/equipos/');
-      set({ equipos: listResp.data.results || listResp.data });
+      const data = listResp.data?.results ?? listResp.data;
+      set({ equipos: Array.isArray(data) ? data : [] });
     } catch (err) {
-      console.error("Error pinging todos:", err);
+      console.error('Error pinging todos:', err);
     }
   },
 
   fetchAlertas: async () => {
     set({ loading: true, error: null });
     try {
-      // Only fetch active (unread) alerts by default
       const response = await api.get('/alertas/?leida=false');
-      let data = response.data.results !== undefined ? response.data.results : response.data;
-      if (!Array.isArray(data)) data = [];
-      set({ alertas: data, loading: false });
+      const data = response.data?.results ?? response.data;
+      set({
+        alertas: Array.isArray(data) ? data : [],
+        loading: false,
+        error: null,
+      });
     } catch (err) {
-<<<<<<< HEAD
-      console.warn("No se pudo conectar a /alertas/.");
-      set({ alertas: [], loading: false, error: err.message });
+      console.error('Error al cargar alertas:', err);
+      set({ alertas: [], loading: false, error: 'No se pudieron cargar las alertas.' });
     }
   },
 
   atenderAlerta: async (id) => {
     try {
       await api.patch(`/alertas/${id}/`, { leida: true });
-      // Remove it from the local state
-      set(state => ({
-        alertas: state.alertas.filter(a => a.id !== id)
+      set((state) => ({
+        alertas: state.alertas.filter((a) => a.id !== id),
       }));
     } catch (err) {
-      console.error("Error al atender alerta:", err);
+      console.error('Error al atender alerta:', err);
     }
   },
 
-  laboratorios: [],
   fetchLaboratorios: async () => {
     set({ loading: true, error: null });
     try {
       const response = await api.get('/laboratorio/');
-      const data = response.data.results !== undefined ? response.data.results : response.data;
-      set({ laboratorios: data, loading: false });
-    } catch (err) {
-      console.warn("Cargando datos de prueba para laboratorios.");
+      const data = response.data?.results ?? response.data;
       set({
-        laboratorios: [
-          { id: 1, nombre: 'Lab de Redes', ubicacion: 'Edificio A, Piso 2', capacidad: 30, activo: true },
-          { id: 2, nombre: 'Taller de Electrónica', ubicacion: 'Edificio B, PB', capacidad: 20, activo: true },
-        ],
-        loading: false
+        laboratorios: Array.isArray(data) ? data : [],
+        loading: false,
+        error: null,
       });
-=======
-      console.error('Error al cargar alertas:', err);
-      set({ alertas: [], loading: false, error: 'No se pudieron cargar las alertas.' });
->>>>>>> 279187066aac9c54dcb78600412b21d320b04528
+    } catch (err) {
+      console.error('Error al cargar laboratorios:', err);
+      set({
+        laboratorios: [],
+        loading: false,
+        error: 'No se pudieron cargar los laboratorios.',
+      });
     }
   },
-  
+
   createLaboratorio: async (labData) => {
     set({ loading: true, error: null });
     try {
       const response = await api.post('/laboratorio/', labData);
-      set(state => ({ 
+      set((state) => ({
         laboratorios: [...state.laboratorios, response.data],
-        loading: false 
+        loading: false,
       }));
       return true;
     } catch (err) {
@@ -224,16 +192,16 @@ const useIotStore = create((set) => ({
     set({ loading: true, error: null });
     try {
       const response = await api.put(`/laboratorio/${id}/`, labData);
-      set(state => ({
-        laboratorios: state.laboratorios.map(l => l.id === id ? response.data : l),
-        loading: false
+      set((state) => ({
+        laboratorios: state.laboratorios.map((l) => (l.id === id ? response.data : l)),
+        loading: false,
       }));
       return true;
     } catch (err) {
       set({ error: 'Error al actualizar laboratorio', loading: false });
       return false;
     }
-  }
+  },
 }));
 
 export default useIotStore;
