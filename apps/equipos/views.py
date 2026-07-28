@@ -1,11 +1,11 @@
 import platform
-import asyncio
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from asgiref.sync import sync_to_async
 
 from .models import Equipo, EventoConexion
 from .serializers import EquipoSerializer, EventoConexionSerializer
@@ -13,7 +13,7 @@ from .serializers import EquipoSerializer, EventoConexionSerializer
 
 def _ping_args(ip: str) -> list:
     """
-    Devuelve los argumentos correctos del comando ping según el SO.
+    Devuelve los argumentos correctos del comando ping segun el SO.
     Windows : ping -n 1 -w 1000 <ip>   (timeout en milisegundos)
     Linux/Mac: ping -c 1 -W 1    <ip>   (timeout en segundos)
     """
@@ -22,40 +22,33 @@ def _ping_args(ip: str) -> list:
     return ['ping', '-c', '1', '-W', '1', ip]
 
 
-async def ejecutar_ping(ip: str) -> bool:
+def ejecutar_ping(ip: str) -> bool:
     """
     Ejecuta un ping real y devuelve True si el host responde.
-    Incluye timeout de seguridad para que nunca se quede colgado.
+    Version sincrona (compatible con WSGI). Incluye timeout de seguridad.
     """
     try:
-        process = await asyncio.create_subprocess_exec(
-            *_ping_args(ip),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+        resultado = subprocess.run(
+            _ping_args(ip),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=3,
         )
-        await asyncio.wait_for(process.communicate(), timeout=3)
-        return process.returncode == 0
-    except asyncio.TimeoutError:
-        try:
-            process.kill()
-        except Exception:
-            pass
-        return False
+        return resultado.returncode == 0
     except Exception:
         return False
 
 
-@sync_to_async
 def actualizar_estado_equipo(equipo, responde):
     """
-    Actualiza el estado de un equipo y, SOLO SI CAMBIÓ,
+    Actualiza el estado de un equipo y, SOLO SI CAMBIO,
     registra un EventoConexion. (HU-17)
     """
     estado_anterior = equipo.estado_conexion
-    estado_nuevo    = 'activo' if responde else 'inactivo'
+    estado_nuevo = 'activo' if responde else 'inactivo'
 
     equipo.estado_conexion = estado_nuevo
-    equipo.ultimo_ping     = timezone.now()
+    equipo.ultimo_ping = timezone.now()
     equipo.save()
 
     hubo_cambio = estado_anterior != estado_nuevo
@@ -70,14 +63,14 @@ def actualizar_estado_equipo(equipo, responde):
 
 
 class EquipoViewSet(viewsets.ModelViewSet):
-    serializer_class   = EquipoSerializer
+    serializer_class = EquipoSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset    = Equipo.objects.all()
+        queryset = Equipo.objects.all()
         laboratorio = self.request.query_params.get('laboratorio')
-        activo      = self.request.query_params.get('activo')
-        estado      = self.request.query_params.get('estado')
+        activo = self.request.query_params.get('activo')
+        estado = self.request.query_params.get('estado')
 
         if laboratorio:
             queryset = queryset.filter(laboratorio__id=laboratorio)
@@ -89,52 +82,52 @@ class EquipoViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(detail=True, methods=['get'], url_path='ping')
-    async def ping(self, request, pk=None):
+    def ping(self, request, pk=None):
         """
         Verifica conectividad de UN equipo. (HU-14)
         """
-        equipo   = await sync_to_async(self.get_object)()
-        responde = await ejecutar_ping(equipo.ip)
-        cambio   = await actualizar_estado_equipo(equipo, responde)
+        equipo = self.get_object()
+        responde = ejecutar_ping(equipo.ip)
+        cambio = actualizar_estado_equipo(equipo, responde)
 
         return Response({
-            'equipo':           equipo.nombre,
-            'ip':               equipo.ip,
-            'responde':         responde,
-            'estado_conexion':  equipo.estado_conexion,
+            'equipo': equipo.nombre,
+            'ip': equipo.ip,
+            'responde': responde,
+            'estado_conexion': equipo.estado_conexion,
             'cambio_de_estado': cambio,
-            'timestamp':        equipo.ultimo_ping,
+            'timestamp': equipo.ultimo_ping,
         })
 
     @action(detail=False, methods=['get'], url_path='ping-todos')
-    async def ping_todos(self, request):
+    def ping_todos(self, request):
         """
-        Verifica conectividad de TODOS los equipos concurrentemente. (HU-14)
-        Los pings corren en paralelo — no en secuencia — así 30 equipos
-        tardan lo mismo que 1 solo ping.
+        Verifica conectividad de TODOS los equipos en paralelo. (HU-14)
+        Usa un pool de hilos para que N equipos tarden casi lo mismo que 1.
         """
-        equipos = await sync_to_async(list)(Equipo.objects.filter(activo=True))
+        equipos = list(Equipo.objects.filter(activo=True))
 
-        async def procesar_equipo(equipo):
-            responde = await ejecutar_ping(equipo.ip)
-            cambio   = await actualizar_estado_equipo(equipo, responde)
-            return {
-                'equipo':           equipo.nombre,
-                'ip':               equipo.ip,
-                'estado_conexion':  equipo.estado_conexion,
+        # Ejecuta los pings en paralelo (hilos), mucho mas rapido que en serie
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            respuestas = list(executor.map(lambda e: ejecutar_ping(e.ip), equipos))
+
+        resultados = []
+        for equipo, responde in zip(equipos, respuestas):
+            cambio = actualizar_estado_equipo(equipo, responde)
+            resultados.append({
+                'equipo': equipo.nombre,
+                'ip': equipo.ip,
+                'estado_conexion': equipo.estado_conexion,
                 'cambio_de_estado': cambio,
-            }
-
-        tasks      = [procesar_equipo(e) for e in equipos]
-        resultados = await asyncio.gather(*tasks)
+            })
 
         total_activos = sum(1 for r in resultados if r['estado_conexion'] == 'activo')
 
         return Response({
-            'total_equipos':   len(resultados),
-            'total_activos':   total_activos,
+            'total_equipos': len(resultados),
+            'total_activos': total_activos,
             'total_inactivos': len(resultados) - total_activos,
-            'detalle':         resultados,
+            'detalle': resultados,
         })
 
     @action(detail=True, methods=['get'], url_path='historial')
@@ -144,7 +137,7 @@ class EquipoViewSet(viewsets.ModelViewSet):
         GET /api/v1/equipos/<id>/historial/
         GET /api/v1/equipos/<id>/historial/?desde=2026-06-01&hasta=2026-06-20
         """
-        equipo  = self.get_object()
+        equipo = self.get_object()
         eventos = EventoConexion.objects.filter(equipo=equipo)
 
         desde = request.query_params.get('desde')
@@ -166,16 +159,16 @@ class EquipoViewSet(viewsets.ModelViewSet):
 
 class EventoConexionViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Listado general de TODOS los eventos de conexión/desconexión. (HU-17)
-    Solo lectura: estos eventos los crea el sistema automáticamente.
+    Listado general de TODOS los eventos de conexion/desconexion. (HU-17)
+    Solo lectura: estos eventos los crea el sistema automaticamente.
     """
-    serializer_class   = EventoConexionSerializer
+    serializer_class = EventoConexionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = EventoConexion.objects.all()
-        equipo   = self.request.query_params.get('equipo')
-        tipo     = self.request.query_params.get('tipo')
+        equipo = self.request.query_params.get('equipo')
+        tipo = self.request.query_params.get('tipo')
 
         if equipo:
             queryset = queryset.filter(equipo__id=equipo)
