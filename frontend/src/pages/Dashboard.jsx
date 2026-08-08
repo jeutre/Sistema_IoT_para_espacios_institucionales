@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useIotStore from '../store/iotStore';
 import SimpleChart from '../components/SimpleChart';
+import api from '../axiosConfig';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -28,6 +29,24 @@ const Dashboard = () => {
   const [labChartData, setLabChartData] = useState([]);
   const [activityChartData, setActivityChartData] = useState([]);
   const [networkNodes, setNetworkNodes] = useState([]);
+  const [kpis, setKpis] = useState(null);
+
+  // KPIs reales del backend (HU-23) + actividad real por hora
+  useEffect(() => {
+    const cargar = () => {
+      api.get('/dashboard/kpis/').then(r => setKpis(r.data)).catch(() => {});
+      api.get('/ocupacion/horas-pico/').then(r => {
+        const det = r.data?.detalle_por_hora ?? [];
+        setActivityChartData(det.map(d => ({
+          label: `${String(d.hora).padStart(2, '0')}:00`,
+          value: d.total_eventos_ocupado
+        })));
+      }).catch(() => {});
+    };
+    cargar();
+    const id = setInterval(cargar, 15000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -35,9 +54,15 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    fetchDispositivos();
-    fetchOcupacion();
-    fetchAlertas();
+    // Todo el dashboard en tiempo real: se recargan los datos cada 10 segundos.
+    const cargarStore = () => {
+      fetchDispositivos();
+      fetchOcupacion();
+      fetchAlertas();
+    };
+    cargarStore();
+    const id = setInterval(cargarStore, 10000);
+    return () => clearInterval(id);
   }, [fetchDispositivos, fetchOcupacion, fetchAlertas]);
 
   useEffect(() => {
@@ -93,19 +118,7 @@ const Dashboard = () => {
       }
       setLabChartData(labData);
 
-      // --- Generar datos para Gráfico de Actividad (Simulado 24h basado en BD) ---
-      const currentHour = ahora.getHours();
-      const actData = [];
-      const base = (safeAlertas.length + safeOcupacion.length) || 5;
-      for(let i=0; i<7; i++) {
-        let hr = currentHour - (6-i)*4;
-        if (hr < 0) hr += 24;
-        actData.push({
-          label: `${hr.toString().padStart(2, '0')}:00`,
-          value: Math.floor(base * (Math.random() * 0.5 + 0.5))
-        });
-      }
-      setActivityChartData(actData);
+      // La actividad por hora ahora viene de datos REALES (ver efecto de KPIs arriba).
 
       // --- Topología Dinámica ---
       const nodes = safeDispositivos.map((d, index) => {
@@ -246,6 +259,56 @@ const Dashboard = () => {
         </div>
       </header>
 
+      {/* ── KPIs Institucionales (HU-23) ── */}
+      <div className="glass-container" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:'1rem' }}>
+          <span style={{ color:'#00f0ff', fontWeight:600 }}>KPIs Institucionales</span>
+          <span style={{ marginLeft:'auto', color:'#00ff66', fontSize:12, border:'1px solid rgba(0,255,102,0.35)', borderRadius:20, padding:'2px 10px' }}>en vivo</span>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(155px,1fr))', gap:14 }}>
+
+          <div style={{ background:'rgba(0,240,255,0.06)', border:'1px solid rgba(0,240,255,0.2)', borderRadius:12, padding:'1rem' }}>
+            <div style={{ color:'#8aa0b8', fontSize:11, letterSpacing:'0.04em' }}>OCUPACIÓN</div>
+            <div style={{ color:'#00f0ff', fontSize:30, fontWeight:500 }}>{kpis?.porcentaje_ocupacion ?? 0}<span style={{fontSize:15}}>%</span></div>
+            <div style={{ display:'flex', alignItems:'flex-end', gap:3, height:32, marginTop:8 }}>
+              {activityChartData.slice(-8).map((d,i)=>{const mx=Math.max(...activityChartData.map(x=>x.value),1);return <div key={i} style={{ flex:1, height:`${Math.max((d.value/mx)*100,6)}%`, background:'#00f0ff', opacity:0.35+0.65*(d.value/mx), borderRadius:'2px 2px 0 0' }}></div>;})}
+            </div>
+            <div style={{ color:'#5f7185', fontSize:10, marginTop:6 }}>por hora (real)</div>
+          </div>
+
+          <div style={{ background:'rgba(168,85,247,0.06)', border:'1px solid rgba(168,85,247,0.22)', borderRadius:12, padding:'1rem' }}>
+            <div style={{ color:'#8aa0b8', fontSize:11, letterSpacing:'0.04em' }}>DISPONIBILIDAD</div>
+            <div style={{ color:'#a855f7', fontSize:30, fontWeight:500 }}>{kpis?.disponibilidad_equipos ?? 0}<span style={{fontSize:15}}>%</span></div>
+            <div style={{ height:6, background:'rgba(255,255,255,0.08)', borderRadius:4, marginTop:14 }}><div style={{ height:'100%', width:`${kpis?.disponibilidad_equipos ?? 0}%`, background:'#a855f7', borderRadius:4 }}></div></div>
+            <div style={{ color:'#5f7185', fontSize:10, marginTop:10 }}>equipos operativos</div>
+          </div>
+
+          <div style={{ background:'rgba(255,221,0,0.06)', border:'1px solid rgba(255,221,0,0.22)', borderRadius:12, padding:'1rem' }}>
+            <div style={{ color:'#8aa0b8', fontSize:11, letterSpacing:'0.04em' }}>INACTIVIDAD</div>
+            <div style={{ color:'#ffdd00', fontSize:30, fontWeight:500 }}>{kpis?.tiempo_promedio_inactividad_min ?? 0}<span style={{fontSize:15}}> min</span></div>
+            <div style={{ height:6, background:'rgba(255,255,255,0.08)', borderRadius:4, marginTop:14 }}><div style={{ height:'100%', width:`${Math.min((kpis?.tiempo_promedio_inactividad_min ?? 0),100)}%`, background:'#ffdd00', borderRadius:4 }}></div></div>
+            <div style={{ color:'#5f7185', fontSize:10, marginTop:10 }}>promedio equipos</div>
+          </div>
+
+          <div style={{ background:'rgba(0,255,102,0.06)', border:'1px solid rgba(0,255,102,0.22)', borderRadius:12, padding:'1rem' }}>
+            <div style={{ color:'#8aa0b8', fontSize:11, letterSpacing:'0.04em' }}>AHORRO ENERG.</div>
+            <div style={{ color:'#00ff66', fontSize:30, fontWeight:500 }}>{(((kpis?.ahorro_energetico?.ahorro_potencial_wh) ?? 0)/1000).toFixed(1)}<span style={{fontSize:15}}> kWh</span></div>
+            <div style={{ height:6, background:'rgba(255,255,255,0.08)', borderRadius:4, marginTop:14 }}><div style={{ height:'100%', width:`${Math.min((((kpis?.ahorro_energetico?.ahorro_potencial_wh)??0)/1000),100)}%`, background:'#00ff66', borderRadius:4 }}></div></div>
+            <div style={{ color:'#5f7185', fontSize:10, marginTop:10 }}>{kpis?.ahorro_energetico?.horas_inactividad_total ?? 0} h inactivas</div>
+          </div>
+
+          <div style={{ background:'rgba(255,102,0,0.06)', border:'1px solid rgba(255,102,0,0.22)', borderRadius:12, padding:'1rem' }}>
+            <div style={{ color:'#8aa0b8', fontSize:11, letterSpacing:'0.04em' }}>EFICIENCIA</div>
+            <div style={{ color:'#ff6600', fontSize:30, fontWeight:500 }}>{kpis?.eficiencia_operativa ?? 0}<span style={{fontSize:15}}>%</span></div>
+            <div style={{ display:'flex', alignItems:'flex-end', gap:3, height:32, marginTop:8 }}>
+              {activityChartData.slice(-8).map((d,i)=>{const mx=Math.max(...activityChartData.map(x=>x.value),1);return <div key={i} style={{ flex:1, height:`${Math.max((d.value/mx)*100,6)}%`, background:'#ff6600', opacity:0.35+0.65*(d.value/mx), borderRadius:'2px 2px 0 0' }}></div>;})}
+            </div>
+            <div style={{ color:'#5f7185', fontSize:10, marginTop:6 }}>uso real del espacio</div>
+          </div>
+
+        </div>
+      </div>
+
       {/* Top Metrics Row */}
       <div className="widgets-grid">
         <div className="glass-container widget metric-card" onClick={() => navigate('/dashboard/dispositivos')} style={{cursor: 'pointer'}}>
@@ -297,12 +360,12 @@ const Dashboard = () => {
             </svg>
           </div>
           <div className="metric-content">
-            <h3>Eficiencia Energética</h3>
-            <div className="widget-value text-green">{metrics.eficienciaEnergetica}<span className="value-suffix">%</span></div>
+            <h3>Eficiencia Operativa</h3>
+            <div className="widget-value text-green">{kpis?.eficiencia_operativa ?? 0}<span className="value-suffix">%</span></div>
             <div className="metric-bar">
-              <div className="metric-bar-fill green" style={{width: `${metrics.eficienciaEnergetica}%`}}></div>
+              <div className="metric-bar-fill green" style={{width: `${kpis?.eficiencia_operativa ?? 0}%`}}></div>
             </div>
-            <p className="metric-label">Consumo dentro de lo esperado</p>
+            <p className="metric-label">% de ocupación real del espacio</p>
           </div>
         </div>
 

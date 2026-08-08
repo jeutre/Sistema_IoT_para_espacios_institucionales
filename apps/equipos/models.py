@@ -1,64 +1,68 @@
 from django.db import models
-from django.utils import timezone
+from django.core.validators import RegexValidator
 from apps.laboratorio.models import Laboratorio
 
 
 class Equipo(models.Model):
     ESTADO_CHOICES = [
-        ('activo',   'Activo'),
-        ('inactivo', 'Inactivo'),
+        ('activo',     'Activo'),
+        ('inactivo',   'Inactivo'),
+        ('suspendido', 'Suspendido'),
     ]
 
-    laboratorio      = models.ForeignKey(Laboratorio, on_delete=models.CASCADE, related_name='equipos')
     nombre           = models.CharField(max_length=100)
-    ip               = models.GenericIPAddressField(unique=True)
-    mac              = models.CharField(max_length=17, unique=True)
-    activo           = models.BooleanField(default=True)
-    creado_en        = models.DateTimeField(auto_now_add=True)
-
-    # Campos para HU-14, HU-15, HU-16
-    estado_conexion  = models.CharField(max_length=10, choices=ESTADO_CHOICES, default='inactivo')
+    laboratorio      = models.ForeignKey(Laboratorio, on_delete=models.CASCADE, related_name='equipos')
+    ip               = models.GenericIPAddressField(verbose_name='Direccion IPv4')
+    mac              = models.CharField(
+        max_length=17, unique=True, verbose_name='Direccion MAC',
+        validators=[RegexValidator(
+            regex=r'^([0-9A-Fa-f]{2}[:]){5}([0-9A-Fa-f]{2})$',
+            message='Formato MAC invalido. Use XX:XX:XX:XX:XX:XX',
+        )]
+    )
+    activo           = models.BooleanField(default=True, help_text='Equipo habilitado en el sistema')
+    estado_conexion  = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='inactivo')
+    ultima_actividad = models.DateTimeField(null=True, blank=True)
     ultimo_ping      = models.DateTimeField(null=True, blank=True)
+    posicion_fisica  = models.CharField(max_length=20, blank=True)
+    tiene_relay      = models.BooleanField(default=False)
+    relay_gpio       = models.PositiveSmallIntegerField(null=True, blank=True)
+    consumo_watts    = models.FloatField(default=250.0)
+    creado_en        = models.DateTimeField(auto_now_add=True)
+    actualizado_en   = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['nombre']
-        verbose_name = 'Equipo'
-        verbose_name_plural = 'Equipos'
+        db_table = 'equipos_equipo'
+        ordering = ['laboratorio', 'nombre']
+        unique_together = [['laboratorio', 'ip']]
 
     def __str__(self):
-        return f'{self.nombre} — {self.ip}'
+        return f"{self.nombre} ({self.ip})"
 
     @property
     def minutos_inactivo(self):
-        """
-        Calcula hace cuánto no responde el equipo. (HU-16)
-        Devuelve None si nunca ha hecho ping o si está activo.
-        """
-        if not self.ultimo_ping or self.estado_conexion == 'activo':
-            return None
-        delta = timezone.now() - self.ultimo_ping
-        return int(delta.total_seconds() // 60)
+        if self.ultima_actividad:
+            from django.utils import timezone
+            return (timezone.now() - self.ultima_actividad).total_seconds() / 60
+        return None
 
 
 class EventoConexion(models.Model):
-    """
-    Registra cada CAMBIO de estado de un equipo (HU-17).
-    No guarda cada ping, solo cuando el estado realmente cambia
-    (de activo a inactivo o viceversa).
-    """
     TIPO_CHOICES = [
-        ('conexion',    'Conexión'),
-        ('desconexion', 'Desconexión'),
+        ('conexion',    'Conexion'),
+        ('desconexion', 'Desconexion'),
+        ('suspension',  'Suspension'),
+        ('apagado',     'Apagado'),
+        ('encendido',   'Encendido'),
     ]
 
     equipo        = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='eventos_conexion')
-    tipo          = models.CharField(max_length=12, choices=TIPO_CHOICES)
+    tipo          = models.CharField(max_length=20, choices=TIPO_CHOICES)
     registrado_en = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'equipos_evento_conexion'
         ordering = ['-registrado_en']
-        verbose_name = 'Evento de conexión'
-        verbose_name_plural = 'Eventos de conexión'
 
     def __str__(self):
-        return f'{self.equipo.nombre} — {self.tipo} — {self.registrado_en}'
+        return f"{self.equipo.nombre}: {self.tipo} @ {self.registrado_en}"

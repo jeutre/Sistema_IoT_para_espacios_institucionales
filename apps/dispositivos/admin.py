@@ -4,13 +4,13 @@ from .models import Dispositivo, HistorialComunicacion
 
 @admin.register(Dispositivo)
 class DispositivoAdmin(admin.ModelAdmin):
-    list_display  = ['identificador', 'laboratorio', 'ip', 'estado', 'ultima_conexion']
-    list_filter   = ['estado', 'laboratorio']
+    list_display = ['identificador', 'tipo', 'ip', 'estado', 'laboratorio', 'ultima_conexion']
+    list_filter = ['tipo', 'estado', 'laboratorio']
     search_fields = ['identificador', 'ip']
 
 
 @admin.register(HistorialComunicacion)
 class HistorialComunicacionAdmin(admin.ModelAdmin):
-    list_display  = ['dispositivo', 'mensaje', 'recibido_en']
-    list_filter   = ['dispositivo']
-    search_fields = ['mensaje']
+    list_display = ['dispositivo', 'tipo_evento', 'exitoso', 'recibido_en']
+    list_filter = ['tipo_evento', 'exitoso']
+    search_fields = ['dispositivo__identificador']

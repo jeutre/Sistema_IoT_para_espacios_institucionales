@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import api from '../axiosConfig';
@@ -9,16 +9,76 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tool
 const Reportes = () => {
   const [exporting, setExporting] = useState(null);
   const [success, setSuccess] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+
+  const [barData, setBarData] = useState({ labels: [], datasets: [] });
+  const [pieData, setPieData] = useState({ labels: [], datasets: [] });
+  const [cargando, setCargando] = useState(false);
+  const [sinDatos, setSinDatos] = useState(false);
+
+  // Trae datos REALES del backend (respeta el filtro de fechas)
+  const cargarGraficos = useCallback(async () => {
+    setCargando(true);
+    setSinDatos(false);
+    try {
+      const params = {};
+      if (desde) params.desde = desde;
+      if (hasta) params.hasta = hasta;
+
+      // Gráfico de barras: ocupación por hora (dato real de /ocupacion/horas-pico/)
+      const hp = await api.get('/ocupacion/horas-pico/', { params });
+      const detalle = hp.data?.detalle_por_hora ?? [];
+      setBarData({
+        labels: detalle.map(d => `${String(d.hora).padStart(2, '0')}:00`),
+        datasets: [{
+          label: 'Eventos "ocupado"',
+          data: detalle.map(d => d.total_eventos_ocupado),
+          backgroundColor: 'rgba(0, 240, 255, 0.4)',
+          borderColor: '#00f0ff',
+          borderWidth: 1,
+          borderRadius: 4,
+        }],
+      });
+
+      // Gráfico circular: ocupado vs disponible (dato real de /dashboard/kpis/)
+      const kpis = await api.get('/dashboard/kpis/', { params });
+      const ocupado = kpis.data?.porcentaje_ocupacion ?? 0;
+      const disponible = Math.max(100 - ocupado, 0);
+      setPieData({
+        labels: ['Ocupado (%)', 'Disponible (%)'],
+        datasets: [{
+          data: [ocupado, disponible],
+          backgroundColor: ['#00f0ff', '#00ff66'],
+          borderColor: ['rgba(10,20,40,0.8)'],
+          borderWidth: 2,
+        }],
+      });
+
+      setSinDatos(detalle.length === 0);
+    } catch (error) {
+      console.error('Error cargando gráficos:', error);
+      setSinDatos(true);
+    } finally {
+      setCargando(false);
+    }
+  }, [desde, hasta]);
+
+  useEffect(() => { cargarGraficos(); }, [cargarGraficos]);
 
   const handleExportPDF = () => {
-    alert("Exportación a PDF disponible próximamente.");
+    alert('Exportación a PDF disponible próximamente.');
   };
 
   const handleExportCSV = async (modelo) => {
     setExporting(modelo);
     setSuccess('');
     try {
+      const params = {};
+      if (desde) params.desde = desde;
+      if (hasta) params.hasta = hasta;
       const response = await api.get(`/reportes/exportar/${modelo}/`, {
+        params,
         responseType: 'blob',
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -31,33 +91,11 @@ const Reportes = () => {
       setSuccess(`Reporte ${modelo} exportado correctamente`);
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error("Error exportando:", error);
-      alert("Error al exportar. Verifica conexión al servidor.");
+      console.error('Error exportando:', error);
+      alert('Error al exportar. Verifica conexión al servidor.');
     } finally {
       setExporting(null);
     }
-  };
-
-  const barData = {
-    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5'],
-    datasets: [{
-      label: 'Rendimiento General',
-      data: [65, 59, 80, 81, 56],
-      backgroundColor: 'rgba(0, 240, 255, 0.4)',
-      borderColor: '#00f0ff',
-      borderWidth: 1,
-      borderRadius: 4,
-    }],
-  };
-
-  const pieData = {
-    labels: ['Laboratorios', 'Aulas', 'Talleres', 'Auditorios'],
-    datasets: [{
-      data: [45, 30, 15, 10],
-      backgroundColor: ['#00f0ff', '#00ff66', '#a855f7', '#ff6b6b'],
-      borderColor: ['rgba(10,20,40,0.8)'],
-      borderWidth: 2,
-    }],
   };
 
   const chartOptions = {
@@ -80,11 +118,24 @@ const Reportes = () => {
       <div className="report-stats">
         <div className="stat-chip">
           <span className="chip-dot cyan"></span>
-          Exportaciones disponibles: 3
+          Período: {desde || 'inicio'} a {hasta || 'hoy'}
         </div>
-        <div className="stat-chip">
-          <span className="chip-dot green"></span>
-          Última exportación: —
+      </div>
+
+      {/* Filtro de fechas (HU-33) */}
+      <div className="page-card">
+        <h3 className="section-title">Período del reporte</h3>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', opacity: 0.6 }}>Desde</label>
+            <input type="date" value={desde} onChange={e => setDesde(e.target.value)} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', opacity: 0.6 }}>Hasta</label>
+            <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} />
+          </div>
+          <button className="btn-secondary" onClick={cargarGraficos}>Aplicar</button>
+          <button className="btn-secondary" onClick={() => { setDesde(''); setHasta(''); }}>Limpiar</button>
         </div>
       </div>
 
@@ -92,18 +143,11 @@ const Reportes = () => {
         <div className="export-section">
           <h3 className="section-title">Exportar Datos</h3>
           <div className="export-buttons">
-            <button className="btn-secondary" onClick={handleExportPDF}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
-              Exportar PDF
-            </button>
+            <button className="btn-secondary" onClick={handleExportPDF}>Exportar PDF</button>
             {[
-              { key: 'historial', label: 'Historial de Uso', icon: 'clock' },
-              { key: 'ocupacion', label: 'Ocupación', icon: 'users' },
-              { key: 'conexion', label: 'Conexiones', icon: 'wifi' },
+              { key: 'historial', label: 'Historial de Uso' },
+              { key: 'ocupacion', label: 'Ocupación' },
+              { key: 'conexion', label: 'Conexiones' },
             ].map(item => (
               <button
                 key={item.key}
@@ -121,11 +165,15 @@ const Reportes = () => {
 
       <div className="charts-grid">
         <div className="chart-card page-card">
-          <h3 className="section-title">Rendimiento General</h3>
-          <div className="chart-wrapper"><Bar data={barData} options={chartOptions} /></div>
+          <h3 className="section-title">Ocupación por hora {cargando && '(cargando...)'}</h3>
+          <div className="chart-wrapper">
+            {sinDatos
+              ? <p style={{ opacity: 0.5, textAlign: 'center' }}>Sin datos de ocupación en el período.</p>
+              : <Bar data={barData} options={chartOptions} />}
+          </div>
         </div>
         <div className="chart-card page-card">
-          <h3 className="section-title">Ocupación de Espacios</h3>
+          <h3 className="section-title">Ocupado vs Disponible</h3>
           <div className="chart-wrapper"><Pie data={pieData} options={chartOptions} /></div>
         </div>
       </div>

@@ -97,3 +97,21 @@
 .status-badge.online .status-dot {
   box-shadow: 0 0 6px currentColor;
 }
+
+/* Botón eliminar: oculto por defecto, aparece al pasar el mouse por la fila */
+.btn-delete {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.data-table tbody tr:hover .btn-delete {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.btn-delete:hover {
+  background: rgba(255, 107, 107, 0.15);
+}

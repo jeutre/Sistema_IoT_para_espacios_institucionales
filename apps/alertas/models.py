@@ -12,10 +12,11 @@ class Alerta(models.Model):
     TIPO_CHOICES = [
         ('desconexion', 'Desconexión de Equipo'),
         ('movimiento', 'Movimiento Fuera de Horario'),
+        ('equipo_sin_ocupacion', 'Equipo Activo Sin Ocupación'),
         ('error_sistema', 'Error del Sistema'),
     ]
 
-    tipo        = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    tipo        = models.CharField(max_length=30, choices=TIPO_CHOICES)
     descripcion = models.TextField()
     nivel       = models.CharField(max_length=10, choices=NIVELES_CHOICES, default='medio')
     leida       = models.BooleanField(default=False)

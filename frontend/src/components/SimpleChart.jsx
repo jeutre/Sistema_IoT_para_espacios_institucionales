@@ -2,8 +2,8 @@ import React from 'react';
 import './SimpleChart.css';
 
 const SimpleChart = ({ title, data, type = 'bar', height = 200 }) => {
-  const maxValue = Math.max(...data.map(item => item.value));
-  
+  const maxValue = (data && data.length) ? Math.max(...data.map(item => item.value), 1) : 1;
+
   const renderBarChart = () => {
     return (
       <div className="chart-bars">
@@ -27,11 +27,15 @@ const SimpleChart = ({ title, data, type = 'bar', height = 200 }) => {
   };
   
   const renderLineChart = () => {
+    if (!data || data.length === 0) {
+      return <div className="chart-line-container"></div>;
+    }
+    // El viewBox es "0 0 100 100": los puntos van como números (NO porcentajes).
     const points = data.map((item, index) => {
-      const x = (index / (data.length - 1)) * 100;
+      const x = data.length === 1 ? 50 : (index / (data.length - 1)) * 100;
       const y = 100 - (item.value / maxValue) * 100;
-      return `${x}% ${y}%`;
-    }).join(', ');
+      return `${x},${y}`;
+    }).join(' ');
     
     return (
       <div className="chart-line-container">

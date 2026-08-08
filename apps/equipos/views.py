@@ -1,38 +1,29 @@
-import platform
 import subprocess
-from concurrent.futures import ThreadPoolExecutor
+import logging
 from django.utils import timezone
-from rest_framework import viewsets
+from django.conf import settings
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from .models import Equipo, EventoConexion
 from .serializers import EquipoSerializer, EventoConexionSerializer
 
-
-def _ping_args(ip: str) -> list:
-    """
-    Devuelve los argumentos correctos del comando ping segun el SO.
-    Windows : ping -n 1 -w 1000 <ip>   (timeout en milisegundos)
-    Linux/Mac: ping -c 1 -W 1    <ip>   (timeout en segundos)
-    """
-    if platform.system().lower() == 'windows':
-        return ['ping', '-n', '1', '-w', '1000', ip]
-    return ['ping', '-c', '1', '-W', '1', ip]
+log = logging.getLogger(__name__)
 
 
-def ejecutar_ping(ip: str) -> bool:
+def ejecutar_ping(ip):
     """
-    Ejecuta un ping real y devuelve True si el host responde.
-    Version sincrona (compatible con WSGI). Incluye timeout de seguridad.
+    Ejecuta un ping ICMP a la IP dada usando el comando 'ping' de Linux
+    (el contenedor corre sobre python:3.12-slim / debian, no Windows).
+    Devuelve True si el host responde, False en caso contrario.
     """
+    timeout = settings.IOT_CONFIG['PING_TIMEOUT_SEGUNDOS']
     try:
         resultado = subprocess.run(
-            _ping_args(ip),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=3,
+            ['ping', '-c', '1', '-W', str(timeout), str(ip)],
+            capture_output=True,
+            timeout=timeout + 2,
         )
         return resultado.returncode == 0
     except Exception:
@@ -41,138 +32,94 @@ def ejecutar_ping(ip: str) -> bool:
 
 def actualizar_estado_equipo(equipo, responde):
     """
-    Actualiza el estado de un equipo y, SOLO SI CAMBIO,
-    registra un EventoConexion. (HU-17)
+    Actualiza estado_conexion/ultima_actividad de un Equipo según el
+    resultado del ping, y registra un EventoConexion si el estado cambió.
+    Devuelve True si hubo cambio de estado, False si no.
     """
     estado_anterior = equipo.estado_conexion
-    estado_nuevo = 'activo' if responde else 'inactivo'
+    if responde:
+        equipo.estado_conexion = 'activo'
+        equipo.ultima_actividad = timezone.now()
+    else:
+        equipo.estado_conexion = 'inactivo'
+    equipo.save(update_fields=['estado_conexion', 'ultima_actividad', 'actualizado_en'])
 
-    equipo.estado_conexion = estado_nuevo
-    equipo.ultimo_ping = timezone.now()
-    equipo.save()
-
-    hubo_cambio = estado_anterior != estado_nuevo
-
+    hubo_cambio = estado_anterior != equipo.estado_conexion
     if hubo_cambio:
         EventoConexion.objects.create(
             equipo=equipo,
-            tipo='conexion' if estado_nuevo == 'activo' else 'desconexion'
+            tipo_evento='conexion' if responde else 'desconexion',
+            estado_anterior=estado_anterior,
+            estado_nuevo=equipo.estado_conexion,
         )
-
     return hubo_cambio
 
 
 class EquipoViewSet(viewsets.ModelViewSet):
+    """
+    HU-13: Registrar IPv4
+    HU-13B: Registrar MAC
+    """
+    queryset = Equipo.objects.select_related('laboratorio').all()
     serializer_class = EquipoSerializer
     permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        queryset = Equipo.objects.all()
-        laboratorio = self.request.query_params.get('laboratorio')
-        activo = self.request.query_params.get('activo')
-        estado = self.request.query_params.get('estado')
-
-        if laboratorio:
-            queryset = queryset.filter(laboratorio__id=laboratorio)
-        if activo is not None:
-            queryset = queryset.filter(activo=activo.lower() == 'true')
-        if estado in ('activo', 'inactivo'):
-            queryset = queryset.filter(estado_conexion=estado)
-
-        return queryset
+    filterset_fields = ['laboratorio', 'estado_conexion', 'tiene_relay']
+    search_fields = ['nombre', 'ip', 'mac']
+    ordering_fields = ['nombre', 'ip']
 
     @action(detail=True, methods=['get'], url_path='ping')
     def ping(self, request, pk=None):
-        """
-        Verifica conectividad de UN equipo. (HU-14)
-        """
+        """Ping a un equipo específico"""
         equipo = self.get_object()
         responde = ejecutar_ping(equipo.ip)
-        cambio = actualizar_estado_equipo(equipo, responde)
+        actualizar_estado_equipo(equipo, responde)
 
         return Response({
-            'equipo': equipo.nombre,
-            'ip': equipo.ip,
+            'equipo': equipo.id,
+            'nombre': equipo.nombre,
+            'ip': str(equipo.ip),
             'responde': responde,
             'estado_conexion': equipo.estado_conexion,
-            'cambio_de_estado': cambio,
-            'timestamp': equipo.ultimo_ping,
         })
 
-    @action(detail=False, methods=['get'], url_path='ping-todos')
+    @action(detail=False, methods=['post'], url_path='ping-todos')
     def ping_todos(self, request):
-        """
-        Verifica conectividad de TODOS los equipos en paralelo. (HU-14)
-        Usa un pool de hilos para que N equipos tarden casi lo mismo que 1.
-        """
-        equipos = list(Equipo.objects.filter(activo=True))
-
-        # Ejecuta los pings en paralelo (hilos), mucho mas rapido que en serie
-        with ThreadPoolExecutor(max_workers=20) as executor:
-            respuestas = list(executor.map(lambda e: ejecutar_ping(e.ip), equipos))
-
+        """Ping a todos los equipos del laboratorio"""
         resultados = []
-        for equipo, responde in zip(equipos, respuestas):
-            cambio = actualizar_estado_equipo(equipo, responde)
+
+        for equipo in self.get_queryset():
+            responde = ejecutar_ping(equipo.ip)
+            actualizar_estado_equipo(equipo, responde)
+
             resultados.append({
-                'equipo': equipo.nombre,
-                'ip': equipo.ip,
+                'equipo': equipo.id,
+                'nombre': equipo.nombre,
+                'ip': str(equipo.ip),
+                'responde': responde,
                 'estado_conexion': equipo.estado_conexion,
-                'cambio_de_estado': cambio,
             })
 
-        total_activos = sum(1 for r in resultados if r['estado_conexion'] == 'activo')
-
-        return Response({
-            'total_equipos': len(resultados),
-            'total_activos': total_activos,
-            'total_inactivos': len(resultados) - total_activos,
-            'detalle': resultados,
-        })
-
-    @action(detail=True, methods=['get'], url_path='historial')
-    def historial(self, request, pk=None):
-        """
-        Historial de actividad de UN equipo, con filtro de fechas. (HU-18)
-        GET /api/v1/equipos/<id>/historial/
-        GET /api/v1/equipos/<id>/historial/?desde=2026-06-01&hasta=2026-06-20
-        """
-        equipo = self.get_object()
-        eventos = EventoConexion.objects.filter(equipo=equipo)
-
-        desde = request.query_params.get('desde')
-        hasta = request.query_params.get('hasta')
-
-        if desde:
-            eventos = eventos.filter(registrado_en__date__gte=desde)
-        if hasta:
-            eventos = eventos.filter(registrado_en__date__lte=hasta)
-
-        page = self.paginate_queryset(eventos)
-        if page is not None:
-            serializer = EventoConexionSerializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = EventoConexionSerializer(eventos, many=True)
-        return Response(serializer.data)
+        return Response({'resultados': resultados, 'total': len(resultados)})
 
 
-class EventoConexionViewSet(viewsets.ReadOnlyModelViewSet):
+class EventoConexionViewSet(viewsets.ModelViewSet):
     """
-    Listado general de TODOS los eventos de conexion/desconexion. (HU-17)
-    Solo lectura: estos eventos los crea el sistema automaticamente.
+    HU-17: Consultar historial de eventos de conexión
     """
     serializer_class = EventoConexionSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = EventoConexion.objects.all()
+        queryset = EventoConexion.objects.select_related('equipo').all()
         equipo = self.request.query_params.get('equipo')
         tipo = self.request.query_params.get('tipo')
 
         if equipo:
             queryset = queryset.filter(equipo__id=equipo)
-        if tipo in ('conexion', 'desconexion'):
+        # Aceptar todos los tipos válidos definidos en el modelo (HU-17):
+        # conexion, desconexion, suspension, apagado, encendido
+        tipos_validos = [t for t, _ in EventoConexion.TIPO_CHOICES]
+        if tipo and tipo in tipos_validos:
             queryset = queryset.filter(tipo=tipo)
 
         return queryset

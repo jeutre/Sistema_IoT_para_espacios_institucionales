@@ -1,3 +1,15 @@
+f"""
+apps/control/models.py
+
+CAMBIO: se agrega el campo `origen` (manual / automatico). Antes no había
+forma de distinguir si un Comando lo disparó un administrador desde el
+dashboard o el motor de reglas de automatización, así que HU-31
+("visualizar eventos automáticos") y HU-32 ("historial de automatizaciones")
+terminaban siendo, en la práctica, el mismo endpoint. Con este campo:
+
+- HU-31 (control/historial/) sigue mostrando TODOS los comandos.
+- HU-32 (automatizacion/historial/) filtra solo origen='automatico'.
+"""
 from django.db import models
 from apps.dispositivos.models import Dispositivo
 from apps.equipos.models import Equipo
@@ -20,6 +32,11 @@ class Comando(models.Model):
         ('fallido',    'Fallido'),
     ]
 
+    ORIGEN_CHOICES = [
+        ('manual',      'Manual (administrador)'),
+        ('automatico',  'Automático (motor de reglas)'),
+    ]
+
     # Dispositivo ESP32 — para comandos de relay/luces
     dispositivo = models.ForeignKey(
         Dispositivo,
@@ -28,7 +45,7 @@ class Comando(models.Model):
         null=True, blank=True
     )
 
-    # Equipo PC — para comandos de suspender/apagar (HU-19, HU-20)
+    # Equipo PC — para comandos de suspender/apagar/encender (HU-19, HU-20, HU-20B)
     equipo = models.ForeignKey(
         Equipo,
         on_delete=models.CASCADE,
@@ -38,6 +55,7 @@ class Comando(models.Model):
 
     tipo_accion       = models.CharField(max_length=50, choices=TIPO_ACCION_CHOICES)
     estado            = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    origen            = models.CharField(max_length=20, choices=ORIGEN_CHOICES, default='manual')
     ip_equipo_destino = models.GenericIPAddressField(null=True, blank=True)
     resultado         = models.TextField(null=True, blank=True)  # respuesta del agente
     creado_en         = models.DateTimeField(auto_now_add=True)

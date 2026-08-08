@@ -1,151 +1,123 @@
 import platform
-import asyncio
+import subprocess
+import logging
 from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework_api_key.permissions import HasAPIKey
-from asgiref.sync import sync_to_async
-
 from .models import Dispositivo, HistorialComunicacion
-from .serializers import DispositivoSerializer, HistorialComunicacionSerializer
-from .utils import log_device_ping, log_device_connection_change
+from .serializers import (
+    DispositivoSerializer, DispositivoReadSerializer,
+    HistorialComunicacionSerializer, PingResultSerializer,
+)
+
+log = logging.getLogger(__name__)
 
 
-def _ping_args(ip: str) -> list:
-    """
-    Devuelve los argumentos correctos del comando ping según el SO.
-    Windows : ping -n 1 -w 1000 <ip>   (timeout en milisegundos)
-    Linux/Mac: ping -c 1 -W 1    <ip>   (timeout en segundos)
-    """
+def _ping_args(ip):
     if platform.system().lower() == 'windows':
-        return ['ping', '-n', '1', '-w', '1000', ip]
-    return ['ping', '-c', '1', '-W', '1', ip]
+        return ['ping', '-n', '1', '-w', '3000', ip]
+    return ['ping', '-c', '1', '-W', '3', ip]
 
 
-async def ejecutar_ping(ip: str) -> tuple:
-    """
-    Ejecuta un ping real y devuelve (conectado: bool, error_detail: str | None).
-    Captura cualquier excepción para que nunca rompa la vista.
-    """
-    conectado = False
-    error_detail = None
+def ejecutar_ping(ip):
+    """Ejecuta ping real. Retorna (conectado: bool, error_detail: str|None)"""
     try:
-        process = await asyncio.create_subprocess_exec(
-            *_ping_args(ip),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+        resultado = subprocess.run(
+            _ping_args(ip),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
         )
-        stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=3)
-        conectado = process.returncode == 0
-        if stderr:
-            error_detail = stderr.decode('utf-8', errors='ignore')
-    except FileNotFoundError:
-        error_detail = 'Comando ping no encontrado en el sistema'
-    except PermissionError:
-        error_detail = 'Permiso denegado para ejecutar ping'
-    except asyncio.TimeoutError:
-        try:
-            process.kill()
-        except Exception:
-            pass
-        error_detail = 'Timeout al ejecutar ping'
+        return resultado.returncode == 0, None
+    except subprocess.TimeoutExpired:
+        return False, 'Timeout'
     except Exception as e:
-        error_detail = f'Error inesperado: {str(e)}'
-    return conectado, error_detail
+        return False, str(e)
 
 
 class DispositivoViewSet(viewsets.ModelViewSet):
-    serializer_class   = DispositivoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return DispositivoReadSerializer
+        return DispositivoSerializer
 
     def get_queryset(self):
-        return Dispositivo.objects.all()
+        return Dispositivo.objects.select_related('laboratorio').all()
 
     @action(detail=True, methods=['get'], url_path='ping')
-    async def ping(self, request, pk=None):
-        """
-        Verifica si el ESP32 responde (HU-07).
-        Funciona en Windows y Linux/Mac.
-        """
+    def ping(self, request, pk=None):
+        """HU-07 - Ping real al ESP32"""
         try:
-            dispositivo = await sync_to_async(self.get_object)()
+            dispositivo = self.get_object()
 
-            # Validar que la IP sea válida antes de hacer ping
             if not dispositivo.ip:
                 return Response({
-                    'error': 'El dispositivo no tiene una IP configurada',
+                    'error': 'El dispositivo no tiene IP configurada',
                     'dispositivo': dispositivo.identificador,
-                    'estado': 'error'
+                    'estado': 'error',
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            conectado, error_detail = await ejecutar_ping(dispositivo.ip)
+            conectado, error_detail = ejecutar_ping(dispositivo.ip)
 
             old_status = dispositivo.estado
-            dispositivo.estado          = 'conectado' if conectado else 'desconectado'
+            dispositivo.estado = 'conectado' if conectado else 'desconectado'
             dispositivo.ultima_conexion = timezone.now()
-            await sync_to_async(dispositivo.save)()
+            dispositivo.save(update_fields=['estado', 'ultima_conexion', 'actualizado_en'])
 
-            # Loggear el evento de ping
-            log_device_ping(
-                device_id=dispositivo.identificador,
-                ip=dispositivo.ip,
-                status='conectado' if conectado else 'desconectado',
-                error=error_detail if not conectado else None
+            # Registrar en historial
+            HistorialComunicacion.objects.create(
+                dispositivo=dispositivo,
+                tipo_evento='heartbeat',
+                datos={'conectado': conectado, 'ip': str(dispositivo.ip)},
+                exitoso=conectado,
             )
 
-            # Loggear cambio de estado si hubo
             if old_status != dispositivo.estado:
-                log_device_connection_change(
-                    device_id=dispositivo.identificador,
-                    old_status=old_status,
-                    new_status=dispositivo.estado
-                )
+                log.info(f"ESP32 {dispositivo.identificador}: {old_status} -> {dispositivo.estado}")
 
             response_data = {
                 'dispositivo': dispositivo.identificador,
-                'ip':          dispositivo.ip,
-                'estado':      dispositivo.estado,
-                'timestamp':   dispositivo.ultima_conexion,
-                'conectado':   conectado,
+                'ip': str(dispositivo.ip),
+                'estado': dispositivo.estado,
+                'timestamp': dispositivo.ultima_conexion,
+                'conectado': conectado,
             }
-
             if error_detail and not conectado:
                 response_data['error_detail'] = error_detail
 
             return Response(response_data)
 
         except Exception as e:
-            return Response({
-                'error': 'Error interno al procesar la solicitud de ping',
-                'detail': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            log.error(f"Error en ping: {e}")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HistorialComunicacionViewSet(viewsets.ModelViewSet):
-    serializer_class   = HistorialComunicacionSerializer
-    permission_classes = [IsAuthenticated]
+    serializer_class = HistorialComunicacionSerializer
+    permission_classes = [IsAdminUser]
 
     def get_queryset(self):
-        queryset     = HistorialComunicacion.objects.all()
-        dispositivo  = self.request.query_params.get('dispositivo')
+        queryset = HistorialComunicacion.objects.select_related('dispositivo').all()
+        dispositivo = self.request.query_params.get('dispositivo')
         if dispositivo:
             queryset = queryset.filter(dispositivo__id=dispositivo)
         return queryset
 
     @action(detail=False, methods=['post'], url_path='recibir', permission_classes=[HasAPIKey])
     def recibir(self, request):
-        """
-        Endpoint que recibe mensajes del ESP32 (protegido con API Key).
-        """
+        """Endpoint que recibe mensajes del ESP32 (API Key)"""
         dispositivo_id = request.data.get('dispositivo_id')
-        mensaje        = request.data.get('mensaje')
+        mensaje = request.data.get('mensaje', '')
 
-        if not dispositivo_id or not mensaje:
+        if not dispositivo_id:
             return Response(
-                {'error': 'dispositivo_id y mensaje son obligatorios.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'dispositivo_id es obligatorio.'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
@@ -154,15 +126,18 @@ class HistorialComunicacionViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Dispositivo no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
 
         dispositivo.ultima_conexion = timezone.now()
-        dispositivo.estado          = 'conectado'
-        dispositivo.save()
+        dispositivo.estado = 'conectado'
+        dispositivo.save(update_fields=['estado', 'ultima_conexion', 'actualizado_en'])
 
         historial = HistorialComunicacion.objects.create(
             dispositivo=dispositivo,
-            mensaje=mensaje
+            tipo_evento='heartbeat',
+            mensaje=mensaje,
+            datos=request.data,
+            exitoso=True,
         )
 
         return Response(
             HistorialComunicacionSerializer(historial).data,
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )

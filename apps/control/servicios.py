@@ -10,6 +10,11 @@ Flujo:
                                                shutdown /s  o  suspend
                                                         ↓
                                               {"exito": true/false}
+
+CAMBIO: enviar_comando_a_equipo() ahora acepta origen='manual'|'automatico'
+para poder distinguir en el historial quién disparó cada comando
+(HU-31 vs HU-32). Por defecto sigue siendo 'manual' para no romper las
+llamadas existentes desde apps/control/views.py.
 """
 
 import requests
@@ -23,19 +28,21 @@ AGENTE_PUERTO  = 8765
 AGENTE_TIMEOUT = 10  # segundos — si la PC no responde en 10s, fallido
 
 
-def enviar_comando_a_equipo(equipo: Equipo, tipo_accion: str) -> Comando:
+def enviar_comando_a_equipo(equipo: Equipo, tipo_accion: str, origen: str = 'manual') -> Comando:
     """
     Crea un Comando en la BD y lo envía al agente Windows instalado en el equipo.
     Devuelve el Comando con su estado actualizado (ejecutado / fallido).
 
     Uso:
         from apps.control.servicios import enviar_comando_a_equipo
-        cmd = enviar_comando_a_equipo(equipo, 'apagar_equipo')
+        cmd = enviar_comando_a_equipo(equipo, 'apagar_equipo')                  # manual
+        cmd = enviar_comando_a_equipo(equipo, 'apagar_equipo', origen='automatico')
     """
     # 1. Registrar el intento en la BD
     comando = Comando.objects.create(
         equipo=equipo,
         tipo_accion=tipo_accion,
+        origen=origen,
         ip_equipo_destino=equipo.ip,
         estado='pendiente'
     )
