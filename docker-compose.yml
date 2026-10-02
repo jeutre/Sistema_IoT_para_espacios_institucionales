@@ -6,7 +6,7 @@ services:
     environment:
       - POSTGRES_DB=sistema_iot
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_PASSWORD=
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -26,11 +26,11 @@ services:
       - .:/app
     environment:
       - DEBUG=True
-      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-production}
+      - SECRET_KEY=
       - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,192.168.100.151
       - DJANGO_SETTINGS_MODULE=config.settings
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173
-      - DATABASE_URL=postgres://iot:cambia_esta_clave@db:5432/sistema_iot
+      - DATABASE_URL=
     depends_on:
       db:
         condition: service_healthy
